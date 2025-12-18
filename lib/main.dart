@@ -16,7 +16,7 @@ import 'pages/dashboard_admin.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // LOAD DATA LOCAL
+  // LOAD DATA FROM MYSQL
   await DummyUsers.load();
   await SimpananRepository.load();
   await PinjamanRepository.load();

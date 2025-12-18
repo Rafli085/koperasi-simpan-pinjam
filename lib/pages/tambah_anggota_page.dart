@@ -10,7 +10,7 @@ class TambahAnggotaPage extends StatelessWidget {
     final usernameController = TextEditingController();
     final passwordController = TextEditingController();
 
-    void simpan() {
+    void simpan() async {
       if (namaController.text.isEmpty ||
           usernameController.text.isEmpty ||
           passwordController.text.isEmpty) {
@@ -20,17 +20,22 @@ class TambahAnggotaPage extends StatelessWidget {
         return;
       }
 
-      DummyUsers.tambahAnggota(
+      final success = await DummyUsers.tambahAnggota(
         nama: namaController.text.trim(),
         username: usernameController.text.trim(),
         password: passwordController.text.trim(),
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Anggota berhasil ditambahkan')),
-      );
-
-      Navigator.pop(context);
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Anggota berhasil ditambahkan')),
+        );
+        Navigator.pop(context, true); // Return true untuk refresh
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal menambah anggota')),
+        );
+      }
     }
 
     return Scaffold(

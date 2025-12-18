@@ -11,26 +11,28 @@ class LoginPage extends StatelessWidget {
     final usernameController = TextEditingController();
     final passwordController = TextEditingController();
 
-    void handleLogin() {
+    void handleLogin() async {
       final username = usernameController.text.trim();
       final password = passwordController.text.trim();
 
-      if (!DummyUsers.users.containsKey(username)) {
+      if (username.isEmpty || password.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Username tidak ditemukan')),
+          const SnackBar(content: Text('Username dan password harus diisi')),
         );
         return;
       }
 
-      if (DummyUsers.users[username]!['password'] != password) {
+      // Login via MySQL API
+      final user = await DummyUsers.login(username, password);
+      
+      if (user == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Password salah')),
+          const SnackBar(content: Text('Username atau password salah')),
         );
         return;
       }
 
-      final role = DummyUsers.users[username]!['role']!;
-      onLogin(username, role); // 🔥 FIX UTAMA
+      onLogin(username, user.role);
     }
 
     return Scaffold(

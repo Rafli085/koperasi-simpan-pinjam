@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import '../data/pinjaman_repository.dart';
+import '../services/pinjaman_service.dart';
+import '../models/pinjaman_model.dart';
 import '../utils/format.dart';
 import 'tambah_pinjaman_page.dart';
-import 'cicilan_pinjaman_page.dart';
 
 class PinjamanAdminPage extends StatelessWidget {
   const PinjamanAdminPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final entries = PinjamanRepository.data.entries.toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -27,51 +26,43 @@ class PinjamanAdminPage extends StatelessWidget {
           Navigator.pop(context);
         },
       ),
-      body: entries.isEmpty
-          ? const Center(child: Text('Belum ada data pinjaman'))
-          : ListView(
-              children: entries.map((entry) {
-                final username = entry.key;
-                final pinjamanList = entry.value;
-
-                return ExpansionTile(
-                  title: Text(username),
-                  children: pinjamanList.map<Widget>((p) {
-                    final sisa = PinjamanRepository.sisaPinjaman(p);
+      body: FutureBuilder<List<Pinjaman>>(
+        future: PinjamanService.getAllPinjaman(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          
+          final pinjamanList = snapshot.data ?? [];
+          
+          return pinjamanList.isEmpty
+              ? const Center(child: Text('Belum ada data pinjaman'))
+              : ListView.builder(
+                  itemCount: pinjamanList.length,
+                  itemBuilder: (context, index) {
+                    final p = pinjamanList[index];
+                    final sisa = p.sisaPinjaman;
 
                     return Card(
                       margin: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 4),
                       child: ListTile(
                         leading: const Icon(Icons.credit_card),
-                        title: Text(Format.rupiah(p['jumlah'])),
+                        title: Text(Format.rupiah(p.jumlah)),
                         subtitle: Text(
-                          'Status: ${p['status']} • '
+                          'User ID: ${p.userId} • Status: ${p.status} • '
                           'Sisa: ${Format.rupiah(sisa)}',
                         ),
                         trailing: Chip(
-                          label: Text(p['status']),
-                          backgroundColor: _statusColor(p['status']),
+                          label: Text(p.status),
+                          backgroundColor: _statusColor(p.status),
                         ),
-                        onTap: p['status'] == 'aktif'
-                            ? () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => CicilanPinjamanPage(
-                                      username: username,
-                                      pinjaman: p,
-                                    ),
-                                  ),
-                                );
-                              }
-                            : null,
                       ),
                     );
-                  }).toList(),
+                  },
                 );
-              }).toList(),
-            ),
+        },
+      ),
     );
   }
 

@@ -2,13 +2,18 @@ import 'package:flutter/material.dart';
 import '../data/dummy_users.dart';
 import 'tambah_anggota_page.dart';
 
-class KelolaAnggotaPage extends StatelessWidget {
+class KelolaAnggotaPage extends StatefulWidget {
   const KelolaAnggotaPage({super.key});
 
   @override
+  State<KelolaAnggotaPage> createState() => _KelolaAnggotaPageState();
+}
+
+class _KelolaAnggotaPageState extends State<KelolaAnggotaPage> {
+  @override
   Widget build(BuildContext context) {
-    final anggota = DummyUsers.users.entries
-        .where((e) => e.value['role'] == 'anggota')
+    final anggota = DummyUsers.users
+        .where((user) => user.role == 'anggota')
         .toList();
 
     return Scaffold(
@@ -16,39 +21,37 @@ class KelolaAnggotaPage extends StatelessWidget {
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
         onPressed: () async {
-          await Navigator.push(
+          final result = await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => const TambahAnggotaPage(),
             ),
           );
-          (context as Element).markNeedsBuild();
+          if (result == true) {
+            setState(() {}); // Refresh UI
+          }
         },
       ),
       body: ListView.builder(
         itemCount: anggota.length,
         itemBuilder: (context, index) {
-          final entry = anggota[index];
-          final username = entry.key;
-          final user = entry.value;
+          final user = anggota[index];
 
           return Card(
             margin:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: ListTile(
               leading: const Icon(Icons.person),
-              title: Text(user['nama'] ?? username),
-              subtitle: Text('Username: $username'),
+              title: Text(user.nama),
+              subtitle: Text('Username: ${user.username}'),
               trailing: TextButton(
                 child: const Text('Reset Password'),
                 onPressed: () async {
-                  user['password'] = '123456';
-                  await DummyUsers.save();
-
+                  // TODO: Implement reset password API
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
-                          'Password $username direset ke 123456'),
+                          'Reset password untuk ${user.username} (fitur belum tersedia)'),
                     ),
                   );
                 },

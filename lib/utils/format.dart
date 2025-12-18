@@ -1,7 +1,7 @@
 import 'package:intl/intl.dart';
 
 class Format {
-  static String rupiah(int value) {
+  static String rupiah(num value) {
     final f = NumberFormat.currency(
       locale: 'id_ID',
       symbol: 'Rp ',

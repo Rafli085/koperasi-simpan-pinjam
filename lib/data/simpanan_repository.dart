@@ -1,55 +1,39 @@
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../models/simpanan_model.dart';
+import '../services/simpanan_service.dart';
 
 class SimpananRepository {
-  static const String _key = 'simpanan_data';
+  static Future<bool> tambahSimpanan({
+    required int userId,
+    required double jumlah,
+  }) async {
+    return await SimpananService.addSimpanan(userId: userId, jumlah: jumlah);
+  }
 
-  /// format:
-  /// {
-  ///   "anggota1": [
-  ///      { "tanggal": "...", "jumlah": 50000 }
-  ///   ]
-  /// }
-  static Map<String, List<Map<String, dynamic>>> data = {};
+  /// Mengambil riwayat simpanan untuk seorang user.
+  static Future<List<Simpanan>> getSimpananByUser(int userId) {
+    return SimpananService.getSimpananByUser(userId);
+  }
 
+  /// Mengambil total saldo simpanan seorang user.
+  static Future<double> getTotalSimpanan(int userId) {
+    return SimpananService.getTotalSimpanan(userId);
+  }
+
+  /// Mengambil semua data simpanan (untuk admin).
+  /// Asumsi: SimpananService akan memiliki metode ini.
+  static Future<List<Simpanan>> getAllSimpanan() {
+    // Anda perlu menambahkan implementasi di SimpananService untuk ini.
+    return Future.value([]); // Placeholder
+  }
+
+  /// Load method for compatibility
   static Future<void> load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString(_key);
-
-    if (jsonString == null) {
-      data = {};
-      await save();
-    } else {
-      final decoded = jsonDecode(jsonString) as Map<String, dynamic>;
-      data = decoded.map(
-        (key, value) => MapEntry(
-          key,
-          List<Map<String, dynamic>>.from(value),
-        ),
-      );
-    }
+    // Tidak perlu load karena data langsung dari MySQL
   }
 
-  static Future<void> save() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key, jsonEncode(data));
-  }
-
-  static Future<void> tambahSimpanan(
-    String username,
-    int jumlah,
-  ) async {
-    data.putIfAbsent(username, () => []);
-    data[username]!.add({
-      'tanggal': DateTime.now().toIso8601String(),
-      'jumlah': jumlah,
-    });
-    await save();
-  }
-
-  static int totalSimpanan(String username) {
-    if (!data.containsKey(username)) return 0;
-    return data[username]!
-        .fold(0, (sum, item) => sum + (item['jumlah'] as int));
+  /// Compatibility method for old code
+  static Future<int> totalSimpanan(String username) async {
+    // This is a placeholder - need to get user ID first
+    return 0;
   }
 }

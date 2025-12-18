@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import '../data/pinjaman_repository.dart';
 
 class TambahCicilanPage extends StatelessWidget {
-  final String username;
-  final String pinjamanId;
+  final int pinjamanId;
 
   const TambahCicilanPage({
     super.key,
-    required this.username,
     required this.pinjamanId,
   });
 
@@ -38,9 +36,8 @@ class TambahCicilanPage extends StatelessWidget {
                   if (jumlahController.text.isEmpty) return;
 
                   await PinjamanRepository.tambahCicilan(
-                    username: username,
                     pinjamanId: pinjamanId,
-                    jumlah: int.parse(jumlahController.text),
+                    jumlah: double.parse(jumlahController.text),
                   );
 
                   Navigator.pop(context);

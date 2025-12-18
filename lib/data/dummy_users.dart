@@ -1,66 +1,68 @@
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../services/user_service.dart';
+import '../models/user_model.dart';
 
 class DummyUsers {
-  static Map<String, Map<String, String>> users = {};
-
-  static const String _storageKey = 'dummy_users';
-
-  // DEFAULT DATA (PERTAMA KALI APP DIJALANKAN)
-  static final Map<String, Map<String, String>> _defaultUsers = {
-    'anggota1': {
-      'nama': 'Budi Santoso',
-      'password': '123456',
-      'role': 'anggota',
-    },
-    'admin': {
-      'nama': 'Admin Keuangan',
-      'password': 'admin123',
-      'role': 'admin_keuangan',
-    },
-    'ketua': {
-      'nama': 'Ketua Koperasi',
-      'password': 'ketua123',
-      'role': 'ketua',
-    },
-  };
+  static List<User> users = [];
 
   /// WAJIB dipanggil saat app start
   static Future<void> load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString(_storageKey);
-
-    if (jsonString == null) {
-      // pertama kali → isi default
-      users = Map.from(_defaultUsers);
-      await save();
-    } else {
-      final decoded = jsonDecode(jsonString) as Map<String, dynamic>;
-      users = decoded.map(
-        (key, value) => MapEntry(
-          key,
-          Map<String, String>.from(value),
-        ),
-      );
-    }
+    // Load users dari MySQL API
+    users = await UserService.getAllUsers();
   }
 
-  static Future<void> save() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = jsonEncode(users);
-    await prefs.setString(_storageKey, jsonString);
+  /// Login user
+  static Future<User?> login(String username, String password) async {
+    return await UserService.login(username, password);
   }
 
-  static Future<void> tambahAnggota({
+  /// Tambah anggota baru
+  static Future<bool> tambahAnggota({
     required String nama,
     required String username,
     required String password,
   }) async {
-    users[username] = {
-      'nama': nama,
-      'password': password,
-      'role': 'anggota',
-    };
-    await save();
+    final success = await UserService.addUser(
+      username: username,
+      nama: nama,
+      password: password,
+      role: 'anggota',
+    );
+    
+    if (success) {
+      // Refresh data setelah tambah user
+      await load();
+    }
+    
+    return success;
+  }
+
+  /// Get user by username from the API
+  static User? getUserByUsername(String username) {
+    // Search from the loaded list of users
+    try {
+      return users.firstWhere((user) => user.username == username);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Get all anggota
+  static List<User> getAllAnggota() {
+    return users.where((user) => user.role == 'anggota').toList();
+  }
+
+  /// Hapus anggota
+  static Future<bool> deleteAnggota(int userId) async {
+    final success = await UserService.deleteUser(userId);
+    if (success) {
+      // Refresh data setelah hapus user
+      await load();
+    }
+    return success;
+  }
+
+  /// Save method (untuk kompatibilitas)
+  static Future<void> save() async {
+    // Tidak perlu save karena langsung ke database
   }
 }

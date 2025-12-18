@@ -10,9 +10,8 @@ class TambahSimpananPage extends StatelessWidget {
     final jumlahController = TextEditingController();
     String? selectedUser;
 
-    final anggota = DummyUsers.users.entries
-        .where((e) => e.value['role'] == 'anggota')
-        .map((e) => e.key)
+    final anggota = DummyUsers.users
+        .where((user) => user.role == 'anggota')
         .toList();
 
     return Scaffold(
@@ -28,9 +27,9 @@ class TambahSimpananPage extends StatelessWidget {
               ),
               items: anggota
                   .map(
-                    (u) => DropdownMenuItem(
-                      value: u,
-                      child: Text(u),
+                    (user) => DropdownMenuItem(
+                      value: user.username,
+                      child: Text('${user.nama} (${user.username})'),
                     ),
                   )
                   .toList(),
@@ -53,15 +52,34 @@ class TambahSimpananPage extends StatelessWidget {
                 onPressed: () async {
                   if (selectedUser == null ||
                       jumlahController.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Pilih anggota dan isi jumlah')),
+                    );
                     return;
                   }
 
-                  await SimpananRepository.tambahSimpanan(
-                    selectedUser!,
-                    int.parse(jumlahController.text),
-                  );
-
-                  Navigator.pop(context);
+                  final user = DummyUsers.getUserByUsername(selectedUser!);
+                  if (user?.id != null) {
+                    final success = await SimpananRepository.tambahSimpanan(
+                      userId: user!.id!,
+                      jumlah: double.parse(jumlahController.text),
+                    );
+                    
+                    if (success) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Simpanan berhasil ditambahkan')),
+                      );
+                      Navigator.pop(context, true); // Return true untuk refresh
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Gagal menambah simpanan')),
+                      );
+                    }
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('User tidak ditemukan')),
+                    );
+                  }
                 },
               ),
             ),

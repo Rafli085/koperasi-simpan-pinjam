@@ -9,27 +9,9 @@ class DashboardStatistikPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalAnggota = DummyUsers.users.entries
-        .where((e) => e.value['role'] == 'anggota')
+    final totalAnggota = DummyUsers.users
+        .where((user) => user.role == 'anggota')
         .length;
-
-    final totalSimpanan = SimpananRepository.data.values
-        .expand((list) => list)
-        .fold<int>(0, (s, item) => s + (item['jumlah'] as int));
-
-    int totalPinjamanAktif = 0;
-    int pinjamanMenunggu = 0;
-
-    PinjamanRepository.data.forEach((_, list) {
-      for (var p in list) {
-        if (p['status'] == 'aktif') {
-          totalPinjamanAktif += p['jumlah'] as int;
-        }
-        if (p['status'] == 'menunggu') {
-          pinjamanMenunggu++;
-        }
-      }
-    });
 
     return Scaffold(
       appBar: AppBar(title: const Text('Dashboard Statistik')),
@@ -48,19 +30,19 @@ class DashboardStatistikPage extends StatelessWidget {
           _StatCard(
             icon: Icons.savings,
             title: 'Total Simpanan',
-            value: Format.rupiah(totalSimpanan),
+            value: 'Loading...',
             color: Colors.green,
           ),
           _StatCard(
             icon: Icons.credit_card,
             title: 'Pinjaman Aktif',
-            value: Format.rupiah(totalPinjamanAktif),
+            value: 'Loading...',
             color: Colors.orange,
           ),
           _StatCard(
             icon: Icons.pending_actions,
             title: 'Menunggu Approval',
-            value: '$pinjamanMenunggu',
+            value: 'Loading...',
             color: Colors.red,
           ),
         ],

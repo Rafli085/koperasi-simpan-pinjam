@@ -11,9 +11,8 @@ class TambahPinjamanPage extends StatelessWidget {
     final tenorController = TextEditingController();
     String? selectedUser;
 
-    final anggota = DummyUsers.users.entries
-        .where((e) => e.value['role'] == 'anggota')
-        .map((e) => e.key)
+    final anggota = DummyUsers.users
+        .where((user) => user.role == 'anggota')
         .toList();
 
     return Scaffold(
@@ -29,9 +28,9 @@ class TambahPinjamanPage extends StatelessWidget {
               ),
               items: anggota
                   .map(
-                    (u) => DropdownMenuItem(
-                      value: u,
-                      child: Text(u),
+                    (user) => DropdownMenuItem(
+                      value: user.username,
+                      child: Text('${user.nama} (${user.username})'),
                     ),
                   )
                   .toList(),
@@ -67,11 +66,14 @@ class TambahPinjamanPage extends StatelessWidget {
                     return;
                   }
 
-                  await PinjamanRepository.tambahPinjaman(
-                    username: selectedUser!,
-                    jumlah: int.parse(jumlahController.text),
-                    tenor: int.parse(tenorController.text),
-                  );
+                  final user = DummyUsers.getUserByUsername(selectedUser!);
+                  if (user?.id != null) {
+                    await PinjamanRepository.tambahPinjaman(
+                      userId: user!.id!,
+                      jumlah: double.parse(jumlahController.text),
+                      tenor: int.parse(tenorController.text),
+                    );
+                  }
 
                   Navigator.pop(context);
                 },
