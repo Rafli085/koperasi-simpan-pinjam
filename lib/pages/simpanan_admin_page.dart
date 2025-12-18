@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../data/simpanan_repository.dart';
+import '../utils/format.dart';
 import 'tambah_simpanan_page.dart';
 
 class SimpananAdminPage extends StatelessWidget {
@@ -22,18 +23,23 @@ class SimpananAdminPage extends StatelessWidget {
           );
         },
       ),
-      body: ListView.builder(
-        itemCount: entries.length,
-        itemBuilder: (context, index) {
-          final e = entries[index];
-          final total = SimpananRepository.totalSimpanan(e.key);
-          return ListTile(
-            leading: const Icon(Icons.person),
-            title: Text(e.key),
-            subtitle: Text('Total: Rp $total'),
-          );
-        },
-      ),
+      body: entries.isEmpty
+          ? const Center(child: Text('Belum ada simpanan'))
+          : ListView.builder(
+              itemCount: entries.length,
+              itemBuilder: (context, index) {
+                final e = entries[index];
+                final total = SimpananRepository.totalSimpanan(e.key);
+
+                return ListTile(
+                  leading: const Icon(Icons.person),
+                  title: Text(e.key),
+                  subtitle: Text(
+                    'Total: ${Format.rupiah(total)}',
+                  ),
+                );
+              },
+            ),
     );
   }
 }

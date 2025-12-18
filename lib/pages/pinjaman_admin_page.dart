@@ -9,7 +9,10 @@ class PinjamanAdminPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final entries = PinjamanRepository.data.entries.toList();
+    final Map<String, List<Map<String, dynamic>>> dataAktif =
+        Map<String, List<Map<String, dynamic>>>.from(
+      PinjamanRepository.data['aktif'] ?? {},
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -27,40 +30,52 @@ class PinjamanAdminPage extends StatelessWidget {
           Navigator.pop(context);
         },
       ),
-      body: entries.isEmpty
+      body: dataAktif.isEmpty
           ? const Center(child: Text('Belum ada data pinjaman'))
           : ListView(
-              children: entries.map((entry) {
+              children: dataAktif.entries.map((entry) {
                 final username = entry.key;
                 final pinjamanList = entry.value;
 
+                if (pinjamanList.isEmpty) {
+                  return const SizedBox();
+                }
+
                 return ExpansionTile(
                   title: Text(username),
-                  children: pinjamanList.map<Widget>((p) {
-                    final sisa = PinjamanRepository.sisaPinjaman(p);
+                  children: pinjamanList.map((p) {
+                    final int sisa =
+                        PinjamanRepository.sisaPinjaman(p);
 
                     return Card(
                       margin: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 4),
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
                       child: ListTile(
-                        leading: const Icon(Icons.credit_card),
-                        title: Text(Format.rupiah(p['jumlah'])),
+                        leading:
+                            const Icon(Icons.credit_card),
+                        title: Text(
+                          Format.rupiah(p['jumlah'] as int),
+                        ),
                         subtitle: Text(
                           'Status: ${p['status']} • '
                           'Sisa: ${Format.rupiah(sisa)}',
                         ),
                         trailing: Chip(
                           label: Text(p['status']),
-                          backgroundColor: _statusColor(p['status']),
+                          backgroundColor:
+                              _statusColor(p['status']),
                         ),
                         onTap: p['status'] == 'aktif'
                             ? () {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => CicilanPinjamanPage(
+                                    builder: (_) =>
+                                        CicilanPinjamanPage(
                                       username: username,
-                                      pinjaman: p,
+                                      pinjamanId: p['id'],
                                     ),
                                   ),
                                 );
@@ -75,18 +90,16 @@ class PinjamanAdminPage extends StatelessWidget {
     );
   }
 
-  Color? _statusColor(String status) {
+  Color _statusColor(String status) {
     switch (status) {
       case 'aktif':
-        return Colors.green[100];
+        return Colors.green[100]!;
       case 'menunggu':
-        return Colors.orange[100];
-      case 'ditolak':
-        return Colors.red[100];
+        return Colors.orange[100]!;
       case 'lunas':
-        return Colors.blue[100];
+        return Colors.blue[100]!;
       default:
-        return null;
+        return Colors.grey[200]!;
     }
   }
 }

@@ -5,18 +5,45 @@ import 'tambah_cicilan_page.dart';
 
 class CicilanPinjamanPage extends StatelessWidget {
   final String username;
-  final Map<String, dynamic> pinjaman;
+  final String pinjamanId;
 
   const CicilanPinjamanPage({
     super.key,
     required this.username,
-    required this.pinjaman,
+    required this.pinjamanId,
   });
+
+  Map<String, dynamic>? _getPinjaman() {
+    final list = PinjamanRepository.data['aktif']![username];
+    if (list == null) return null;
+
+    return list.firstWhere(
+      (p) => p['id'] == pinjamanId,
+      orElse: () => {},
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final cicilan = pinjaman['cicilan'] as List;
-    final sisa = PinjamanRepository.sisaPinjaman(pinjaman);
+    final pinjaman = _getPinjaman();
+
+    if (pinjaman == null || pinjaman.isEmpty) {
+      return const Scaffold(
+        body: Center(child: Text('Data pinjaman tidak ditemukan')),
+      );
+    }
+
+    final List<Map<String, dynamic>> cicilan =
+        List<Map<String, dynamic>>.from(pinjaman['cicilan'] ?? []);
+
+    cicilan.sort((a, b) =>
+        DateTime.parse(a['tanggal']).compareTo(
+          DateTime.parse(b['tanggal']),
+        ));
+
+    final int tenor = pinjaman['tenor'];
+    final int jumlahCicilan = cicilan.length;
+    final int sisa = PinjamanRepository.sisaPinjaman(pinjaman);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Detail Pinjaman')),
@@ -29,11 +56,12 @@ class CicilanPinjamanPage extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (_) => TambahCicilanPage(
                       username: username,
-                      pinjamanId: pinjaman['id'],
+                      pinjamanId: pinjamanId,
                     ),
                   ),
                 );
-                Navigator.pop(context);
+                // 🔥 REBUILD halaman ini
+                (context as Element).markNeedsBuild();
               },
             )
           : null,
@@ -42,10 +70,13 @@ class CicilanPinjamanPage extends StatelessWidget {
         children: [
           Card(
             child: ListTile(
-              leading: const Icon(Icons.credit_card),
-              title: Text(Format.rupiah(pinjaman['jumlah'] as int)),
-              subtitle: Text('Sisa: ${Format.rupiah(sisa)}'),
-              trailing: Chip(label: Text(pinjaman['status'])),
+              title: Text(
+                Format.rupiah(pinjaman['jumlah']),
+              ),
+              subtitle: Text(
+                'Tenor: $tenor bulan • '
+                'Cicilan: $jumlahCicilan',
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -54,13 +85,21 @@ class CicilanPinjamanPage extends StatelessWidget {
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          ...cicilan.map(
-            (c) => ListTile(
-              leading: const Icon(Icons.payments),
-              title: Text(Format.rupiah(c['jumlah'] as int)),
-              subtitle: Text(Format.tanggal(c['tanggal'] as String)),
-            ),
-          ),
+          cicilan.isEmpty
+              ? const Text('Belum ada cicilan')
+              : Column(
+                  children: cicilan.map((c) {
+                    return ListTile(
+                      leading: const Icon(Icons.payments),
+                      title: Text(
+                        Format.rupiah(c['jumlah']),
+                      ),
+                      subtitle: Text(
+                        Format.tanggal(c['tanggal']),
+                      ),
+                    );
+                  }).toList(),
+                ),
         ],
       ),
     );

@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+
 import 'simpanan_admin_page.dart';
 import 'pinjaman_admin_page.dart';
 import 'kelola_anggota_page.dart';
 import 'approval_pinjaman_page.dart';
 import 'dashboard_statistik_page.dart';
+import 'riwayat_pinjaman_page.dart';
 
 class DashboardAdmin extends StatelessWidget {
   final VoidCallback onLogout;
-  final String role;
+  final String role; // admin_keuangan | ketua
 
   const DashboardAdmin({
     super.key,
@@ -15,11 +17,15 @@ class DashboardAdmin extends StatelessWidget {
     required this.role,
   });
 
+  bool get isKetua => role == 'ketua';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Dashboard Admin ($role)'),
+        title: Text(
+          isKetua ? 'Dashboard Ketua' : 'Dashboard Admin',
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -30,7 +36,9 @@ class DashboardAdmin extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // ===== STATISTIK =====
+          // ======================
+          // DASHBOARD STATISTIK
+          // ======================
           Card(
             color: Colors.blue[50],
             child: ListTile(
@@ -51,11 +59,14 @@ class DashboardAdmin extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          // ===== SIMPANAN =====
+          // ======================
+          // DATA SIMPANAN
+          // ======================
           Card(
             child: ListTile(
               leading: const Icon(Icons.savings),
               title: const Text('Data Simpanan'),
+              subtitle: const Text('Kelola simpanan anggota'),
               trailing: const Icon(Icons.arrow_forward_ios),
               onTap: () {
                 Navigator.push(
@@ -70,11 +81,14 @@ class DashboardAdmin extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          // ===== PINJAMAN =====
+          // ======================
+          // DATA PINJAMAN
+          // ======================
           Card(
             child: ListTile(
               leading: const Icon(Icons.credit_card),
               title: const Text('Data Pinjaman'),
+              subtitle: const Text('Pinjaman aktif & pengajuan'),
               trailing: const Icon(Icons.arrow_forward_ios),
               onTap: () {
                 Navigator.push(
@@ -89,13 +103,38 @@ class DashboardAdmin extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          if (role == 'ketua') ...[
+          // ======================
+          // RIWAYAT PINJAMAN (BARU)
+          // ======================
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.history),
+              title: const Text('Riwayat Pinjaman'),
+              subtitle: const Text('Pinjaman yang telah lunas'),
+              trailing: const Icon(Icons.arrow_forward_ios),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const RiwayatPinjamanPage(),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // ======================
+          // APPROVAL (KETUA SAJA)
+          // ======================
+          if (isKetua) ...[
             Card(
               color: Colors.orange[50],
               child: ListTile(
-                leading:
-                    const Icon(Icons.verified, color: Colors.orange),
+                leading: const Icon(Icons.verified, color: Colors.orange),
                 title: const Text('Approval Pinjaman'),
+                subtitle: const Text('Setujui atau tolak pengajuan'),
                 trailing: const Icon(Icons.arrow_forward_ios),
                 onTap: () {
                   Navigator.push(
@@ -110,11 +149,14 @@ class DashboardAdmin extends StatelessWidget {
             const SizedBox(height: 12),
           ],
 
-          // ===== ANGGOTA =====
+          // ======================
+          // KELOLA ANGGOTA
+          // ======================
           Card(
             child: ListTile(
               leading: const Icon(Icons.people),
               title: const Text('Kelola Anggota'),
+              subtitle: const Text('Tambah & kelola anggota'),
               trailing: const Icon(Icons.arrow_forward_ios),
               onTap: () {
                 Navigator.push(

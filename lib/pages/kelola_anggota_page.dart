@@ -11,6 +11,32 @@ class KelolaAnggotaPage extends StatelessWidget {
         .where((e) => e.value['role'] == 'anggota')
         .toList();
 
+    void hapusAnggota(BuildContext context, String username) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Apakah Anda yakin ingin menghapus anggota dengan username "$username"?',
+          ),
+          action: SnackBarAction(
+            label: 'HAPUS',
+            onPressed: () async {
+              DummyUsers.hapusAnggota(username);
+              await DummyUsers.save();
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Anggota "$username" berhasil dihapus'),
+                ),
+              );
+
+              (context as Element).markNeedsBuild();
+            },
+          ),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Kelola Anggota')),
       floatingActionButton: FloatingActionButton(
@@ -39,19 +65,28 @@ class KelolaAnggotaPage extends StatelessWidget {
               leading: const Icon(Icons.person),
               title: Text(user['nama'] ?? username),
               subtitle: Text('Username: $username'),
-              trailing: TextButton(
-                child: const Text('Reset Password'),
-                onPressed: () async {
-                  user['password'] = '123456';
-                  await DummyUsers.save();
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextButton(
+                    child: const Text('Reset Password'),
+                    onPressed: () async {
+                      user['password'] = '123456';
+                      await DummyUsers.save();
 
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                          'Password $username direset ke 123456'),
-                    ),
-                  );
-                },
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                              'Password $username direset ke 123456'),
+                        ),
+                      );
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () => hapusAnggota(context, username),
+                  ),
+                ],
               ),
             ),
           );

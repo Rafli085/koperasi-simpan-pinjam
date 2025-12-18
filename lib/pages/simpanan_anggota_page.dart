@@ -9,7 +9,11 @@ class SimpananAnggotaPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final riwayat = SimpananRepository.data[username] ?? [];
+    final List<Map<String, dynamic>> riwayat =
+        List<Map<String, dynamic>>.from(
+          SimpananRepository.data[username] ?? [],
+        );
+
     final total = SimpananRepository.totalSimpanan(username);
 
     return Scaffold(
@@ -52,9 +56,11 @@ class SimpananAnggotaPage extends StatelessWidget {
                       final item = riwayat[index];
                       return ListTile(
                         leading: const Icon(Icons.payments),
-                        title: Text(Format.rupiah(item['jumlah'] as int)),
-                        subtitle:
-                            Text(Format.tanggal(item['tanggal'] as String)),
+                        title:
+                            Text(Format.rupiah(item['jumlah'] as int)),
+                        subtitle: Text(
+                          Format.tanggal(item['tanggal'] as String),
+                        ),
                       );
                     },
                   ),

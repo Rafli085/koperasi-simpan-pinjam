@@ -9,19 +9,32 @@ class DashboardStatistikPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // =========================
+    // TOTAL ANGGOTA
+    // =========================
     final totalAnggota = DummyUsers.users.entries
         .where((e) => e.value['role'] == 'anggota')
         .length;
 
+    // =========================
+    // TOTAL SIMPANAN
+    // =========================
     final totalSimpanan = SimpananRepository.data.values
         .expand((list) => list)
         .fold<int>(0, (s, item) => s + (item['jumlah'] as int));
 
+    // =========================
+    // TOTAL PINJAMAN
+    // =========================
     int totalPinjamanAktif = 0;
     int pinjamanMenunggu = 0;
 
-    PinjamanRepository.data.forEach((_, list) {
-      for (var p in list) {
+    // ✅ AKSES DATA PINJAMAN AKTIF DENGAN BENAR
+    final aktifData =
+        PinjamanRepository.data['aktif'] as Map<String, List<Map<String, dynamic>>>;
+
+    aktifData.forEach((_, pinjamanList) {
+      for (var p in pinjamanList) {
         if (p['status'] == 'aktif') {
           totalPinjamanAktif += p['jumlah'] as int;
         }
@@ -32,7 +45,9 @@ class DashboardStatistikPage extends StatelessWidget {
     });
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard Statistik')),
+      appBar: AppBar(
+        title: const Text('Dashboard Statistik'),
+      ),
       body: GridView.count(
         padding: const EdgeInsets.all(16),
         crossAxisCount: 2,
@@ -69,6 +84,9 @@ class DashboardStatistikPage extends StatelessWidget {
   }
 }
 
+// =========================
+// WIDGET CARD STATISTIK
+// =========================
 class _StatCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -95,7 +113,9 @@ class _StatCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               title,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
