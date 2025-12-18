@@ -3,13 +3,13 @@ import '../services/pinjaman_service.dart';
 import '../models/pinjaman_model.dart';
 import '../utils/format.dart';
 import 'tambah_pinjaman_page.dart';
+import '../services/user_service.dart';
 
 class PinjamanAdminPage extends StatelessWidget {
   const PinjamanAdminPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Data Pinjaman Anggota'),
@@ -32,9 +32,9 @@ class PinjamanAdminPage extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          
+
           final pinjamanList = snapshot.data ?? [];
-          
+
           return pinjamanList.isEmpty
               ? const Center(child: Text('Belum ada data pinjaman'))
               : ListView.builder(
@@ -49,9 +49,43 @@ class PinjamanAdminPage extends StatelessWidget {
                       child: ListTile(
                         leading: const Icon(Icons.credit_card),
                         title: Text(Format.rupiah(p.jumlah)),
-                        subtitle: Text(
-                          'User ID: ${p.userId} • Status: ${p.status} • '
-                          'Sisa: ${Format.rupiah(sisa)}',
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            FutureBuilder<String>(
+                              future: UserService.getUsernameById(p.userId),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return const Text('Nama: memuat...');
+                                }
+                                return Text(
+                                  'Nama: ${snapshot.data ?? '-'}',
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Tanggal Pinjam: '
+                              '${Format.tanggal(
+                                p.tanggal.toIso8601String(),
+                              )}',
+                            ),
+                            if (p.tanggalApproval != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                'Tanggal Approval: '
+                                '${Format.tanggal(
+                                  p.tanggalApproval!.toIso8601String(),
+                                )}',
+                              ),
+                            ],
+                            const SizedBox(height: 4),
+                            Text(
+                              'Status: ${p.status} • '
+                              'Sisa: ${Format.rupiah(sisa)}',
+                            ),
+                          ],
                         ),
                         trailing: Chip(
                           label: Text(p.status),

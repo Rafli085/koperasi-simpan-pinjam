@@ -5,6 +5,10 @@ class Pinjaman {
   final int tenor;
   final String status; // menunggu, aktif, lunas, ditolak
   final DateTime tanggal;
+
+  // ⬇️ TAMBAHAN (AMAN)
+  final DateTime? tanggalApproval;
+
   final List<Cicilan> cicilan;
 
   Pinjaman({
@@ -14,6 +18,7 @@ class Pinjaman {
     required this.tenor,
     required this.status,
     required this.tanggal,
+    this.tanggalApproval, // ⬅️ BARU
     this.cicilan = const [],
   });
 
@@ -25,6 +30,12 @@ class Pinjaman {
       tenor: json['tenor'],
       status: json['status'],
       tanggal: DateTime.parse(json['tanggal']),
+
+      // ⬇️ AMAN KARENA NULLABLE
+      tanggalApproval: json['tanggal_approval'] != null
+          ? DateTime.parse(json['tanggal_approval'])
+          : null,
+
       cicilan: json['cicilan'] != null
           ? (json['cicilan'] as List)
               .map((c) => Cicilan.fromJson(c))
@@ -41,6 +52,10 @@ class Pinjaman {
       'tenor': tenor,
       'status': status,
       'tanggal': tanggal.toIso8601String(),
+
+      // ⬇️ TIDAK WAJIB DIKIRIM, TAPI AMAN
+      'tanggal_approval': tanggalApproval?.toIso8601String(),
+
       'cicilan': cicilan.map((c) => c.toJson()).toList(),
     };
   }

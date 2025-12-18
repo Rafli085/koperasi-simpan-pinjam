@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/pinjaman_service.dart';
 import '../models/pinjaman_model.dart';
 import '../utils/format.dart';
+import '../services/user_service.dart';
 
 class ApprovalPinjamanPage extends StatelessWidget {
   const ApprovalPinjamanPage({super.key});
@@ -31,8 +32,25 @@ class ApprovalPinjamanPage extends StatelessWidget {
                     return Card(
                       margin: const EdgeInsets.all(12),
                       child: ListTile(
-                        title: Text('User ID: ${p.userId}'),
-                        subtitle: Text('Jumlah: ${Format.rupiah(p.jumlah)}'),
+                        title: FutureBuilder<String>(
+                        future: UserService.getUsernameById(p.userId),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Text('Memuat username...');
+                          }
+                          return Text(snapshot.data ?? '-');
+                        },
+                      ),
+                        subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Jumlah: ${Format.rupiah(p.jumlah)}'),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Tanggal: ${Format.tanggal(p.tanggal.toIso8601String())}',
+                        ),
+                      ],
+                    ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [

@@ -40,4 +40,17 @@ class UserService {
     // TODO: Implement delete user API
     return false;
   }
+    // ===============================
+  // GET USERNAME BY USER ID
+  // ===============================
+  static Future<String> getUsernameById(int userId) async {
+    final users = await getAllUsers();
+
+    try {
+      final user = users.firstWhere((u) => u.id == userId);
+      return user.nama; // ⬅️ INI USERNAME, BUKAN ID
+    } catch (e) {
+      return '-';
+    }
+  }
 }

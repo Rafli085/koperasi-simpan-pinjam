@@ -28,7 +28,7 @@ class CicilanPinjamanPage extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (_) => TambahCicilanPage(
-                      username: username,
+                      username : username,
                       pinjamanId: pinjaman['id'],
                     ),
                   ),
@@ -58,7 +58,11 @@ class CicilanPinjamanPage extends StatelessWidget {
             (c) => ListTile(
               leading: const Icon(Icons.payments),
               title: Text(Format.rupiah(c['jumlah'] as int)),
-              subtitle: Text(Format.tanggal(c['tanggal'] as String)),
+              subtitle: Text(
+                Format.tanggal(
+                  DateTime.parse(c['tanggal']).toIso8601String(),
+                ),
+              ),
             ),
           ),
         ],
