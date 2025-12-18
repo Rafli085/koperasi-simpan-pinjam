@@ -21,9 +21,20 @@ void main() async {
   await SimpananRepository.load();
   await PinjamanRepository.load();
 
-  runApp(const KoperasiApp());
+  runApp(const MyApp());
 }
 
+///
+/// ALIAS ROOT APP
+/// MyApp dipakai untuk standard Flutter & widget test
+///
+class MyApp extends KoperasiApp {
+  const MyApp({super.key});
+}
+
+///
+/// ROOT APLIKASI SEBENARNYA
+///
 class KoperasiApp extends StatefulWidget {
   const KoperasiApp({super.key});
 
