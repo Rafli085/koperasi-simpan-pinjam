@@ -13,14 +13,7 @@ import 'pages/dashboard_anggota_sederhana.dart';
 import 'pages/dashboard_anggota_lengkap.dart';
 import 'pages/dashboard_admin.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // LOAD DATA FROM MYSQL
-  await DummyUsers.load();
-  await SimpananRepository.load();
-  await PinjamanRepository.load();
-
+void main() {
   runApp(const MyApp());
 }
 

@@ -28,7 +28,11 @@ class SimpananRepository {
 
   /// Load method for compatibility
   static Future<void> load() async {
-    // Tidak perlu load karena data langsung dari MySQL
+    try {
+      // Tidak perlu load karena data langsung dari MySQL
+    } catch (e) {
+      print('Error loading simpanan: $e');
+    }
   }
 
   /// Compatibility method for old code

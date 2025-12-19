@@ -6,8 +6,8 @@ class ApiService {
   // URL untuk web (Chrome)
   static const String webBaseUrl = 'http://localhost/koperasi_api';
   // URL untuk mobile
-  static const String mobileBaseUrl = 'http://192.168.188.74/koperasi_api';
-  
+  static const String mobileBaseUrl = 'http://10.249.214.57/koperasi_api';
+
   // Pilih base URL berdasarkan platform
   static String get baseUrl {
     if (kIsWeb) {
@@ -19,14 +19,14 @@ class ApiService {
 
   // ================= LOGIN =================
   static Future<Map<String, dynamic>> login(
-      String username, String password) async {
+    String username,
+    String password,
+  ) async {
     try {
       print('Trying to connect to: $baseUrl/users.php');
       final response = await http.post(
         Uri.parse('$baseUrl/users.php'),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: {
           'action': 'login',
           'username': username.trim(),
@@ -36,11 +36,14 @@ class ApiService {
 
       print('Response status: ${response.statusCode}');
       print('Response body: ${response.body}');
-      
+
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        return {'success': false, 'message': 'Server error: ${response.statusCode}'};
+        return {
+          'success': false,
+          'message': 'Server error: ${response.statusCode}',
+        };
       }
     } catch (e) {
       print('Login error: $e');
@@ -75,9 +78,7 @@ class ApiService {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/users.php'),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: {
           'action': 'add',
           'username': username.trim(),

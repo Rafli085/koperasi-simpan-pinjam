@@ -2,17 +2,27 @@ import '../services/user_service.dart';
 import '../models/user_model.dart';
 
 class DummyUsers {
-  static List<User> users = [];
+  static List<User> users = [
+    User(id: 1, username: 'anggota1', nama: 'Budi Santoso', password: '123456', role: 'anggota'),
+    User(id: 2, username: 'admin', nama: 'Admin Keuangan', password: 'admin123', role: 'admin_keuangan'),
+    User(id: 3, username: 'ketua', nama: 'Ketua Koperasi', password: 'ketua123', role: 'ketua'),
+    User(id: 4, username: 'Mario', nama: 'Mario', password: '123123', role: 'anggota'),
+  ];
 
   /// WAJIB dipanggil saat app start
   static Future<void> load() async {
-    // Load users dari MySQL API
-    users = await UserService.getAllUsers();
+    // Data sudah ada di atas, tidak perlu load dari API
   }
 
   /// Login user
   static Future<User?> login(String username, String password) async {
-    return await UserService.login(username, password);
+    try {
+      return users.firstWhere(
+        (user) => user.username == username && user.password == password,
+      );
+    } catch (e) {
+      return null;
+    }
   }
 
   /// Tambah anggota baru

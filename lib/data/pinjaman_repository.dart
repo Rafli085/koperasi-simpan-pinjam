@@ -43,7 +43,11 @@ class PinjamanRepository {
 
   /// Load method for compatibility
   static Future<void> load() async {
-    // Tidak perlu load karena data langsung dari MySQL
+    try {
+      // Tidak perlu load karena data langsung dari MySQL
+    } catch (e) {
+      print('Error loading pinjaman: $e');
+    }
   }
 
   /// Calculate sisa pinjaman
