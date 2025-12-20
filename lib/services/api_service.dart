@@ -3,151 +3,88 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 
 class ApiService {
-  // URL untuk web (Chrome)
-  static const String webBaseUrl = 'http://localhost/koperasi_api';
-  // URL untuk mobile
-  static const String mobileBaseUrl = 'http://10.249.214.57/koperasi_api';
+  static const String webBaseUrl = 'http://localhost';
+  static const String mobileBaseUrl = 'http://10.242.171.71';
 
-  // Pilih base URL berdasarkan platform
   static String get baseUrl {
-    if (kIsWeb) {
-      return webBaseUrl;
-    } else {
-      return mobileBaseUrl;
-    }
+    return kIsWeb ? webBaseUrl : mobileBaseUrl;
   }
 
-  // ================= LOGIN =================
   static Future<Map<String, dynamic>> login(
     String username,
     String password,
   ) async {
-    try {
-      print('Trying to connect to: $baseUrl/users.php');
-      final response = await http.post(
-        Uri.parse('$baseUrl/users.php'),
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {
-          'action': 'login',
-          'username': username.trim(),
-          'password': password.trim(),
-        },
-      );
+    // LOGIN OFFLINE UNTUK TESTING
+    final testUsers = {
+      'anggota1': {'password': '123456', 'role': 'anggota', 'nama': 'Budi Santoso'},
+      'admin': {'password': 'admin123', 'role': 'admin_keuangan', 'nama': 'Admin Keuangan'},
+      'ketua': {'password': 'ketua123', 'role': 'ketua', 'nama': 'Ketua Koperasi'},
+      'Mario': {'password': '123123', 'role': 'anggota', 'nama': 'Mario'},
+    };
 
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      } else {
-        return {
-          'success': false,
-          'message': 'Server error: ${response.statusCode}',
-        };
-      }
-    } catch (e) {
-      print('Login error: $e');
-      return {'success': false, 'message': 'Connection error: $e'};
+    final user = testUsers[username];
+    if (user != null && user['password'] == password) {
+      return {
+        'success': true,
+        'user': {
+          'id': 1,
+          'username': username,
+          'nama': user['nama'],
+          'role': user['role'],
+        }
+      };
     }
+
+    return {'success': false, 'message': 'Username atau password salah'};
   }
 
-  // ================= GET USERS =================
   static Future<List<dynamic>> getUsers() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/users.php?action=list'),
-      );
-
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      } else {
-        return [];
-      }
-    } catch (e) {
-      return [];
-    }
+    return [
+      {'id': 1, 'username': 'anggota1', 'nama': 'Budi Santoso', 'role': 'anggota'},
+      {'id': 2, 'username': 'admin', 'nama': 'Admin Keuangan', 'role': 'admin_keuangan'},
+      {'id': 3, 'username': 'ketua', 'nama': 'Ketua Koperasi', 'role': 'ketua'},
+      {'id': 4, 'username': 'Mario', 'nama': 'Mario', 'role': 'anggota'},
+    ];
   }
 
-  // ================= ADD USER =================
   static Future<Map<String, dynamic>> addUser({
     required String username,
     required String nama,
     required String password,
     required String role,
   }) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/users.php'),
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {
-          'action': 'add',
-          'username': username.trim(),
-          'nama': nama.trim(),
-          'password': password.trim(),
-          'role': role.trim(),
-        },
-      );
-
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      } else {
-        return {'success': false, 'message': 'Server error'};
-      }
-    } catch (e) {
-      return {'success': false, 'message': 'Connection error: $e'};
-    }
+    return {'success': true, 'message': 'User berhasil ditambahkan (offline mode)'};
   }
 
-  // ================= PRODUK KOPERASI =================
+  static Future<List<dynamic>> getPengajuan(String type, int userId) async {
+    return [];
+  }
+
+  static Future<List<dynamic>> getDetailPinjaman(int userId) async {
+    return [];
+  }
+
   static Future<List<dynamic>> getProduk() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/produk.php?action=get_produk'),
-      );
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
+    return [
+      {
+        'id': 1,
+        'nama_produk': 'Pinjaman Reguler',
+        'jenis': 'reguler',
+        'bunga_persen': 2.5,
+        'bunga_per': 'bulan',
+        'tenor_min': 1,
+        'tenor_max': 12,
       }
-      return [];
-    } catch (e) {
-      return [];
-    }
+    ];
   }
 
   static Future<Map<String, dynamic>> calculateLimit(int userId, int produkId) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/produk.php'),
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {
-          'action': 'calculate_limit',
-          'user_id': userId.toString(),
-          'produk_id': produkId.toString(),
-        },
-      );
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      }
-      return {'success': false, 'message': 'Server error'};
-    } catch (e) {
-      return {'success': false, 'message': 'Connection error: $e'};
-    }
+    return {
+      'success': true,
+      'limit_maksimal': 5000000,
+    };
   }
 
-  static Future<Map<String, dynamic>> getTotalPinjamanAktif(int userId) async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/produk.php?action=get_total_pinjaman_aktif&user_id=$userId'),
-      );
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      }
-      return {'success': false, 'message': 'Server error'};
-    } catch (e) {
-      return {'success': false, 'message': 'Connection error: $e'};
-    }
-  }
-
-  // ================= PENGAJUAN PINJAMAN =================
   static Future<Map<String, dynamic>> ajukanPinjaman({
     required int userId,
     required int produkId,
@@ -158,147 +95,9 @@ class ApiService {
     String? modelHp,
     double? hargaHp,
   }) async {
-    try {
-      final body = {
-        'action': 'ajukan',
-        'user_id': userId.toString(),
-        'produk_id': produkId.toString(),
-        'jumlah': jumlah.toString(),
-        'tenor': tenor.toString(),
-        'keperluan': keperluan,
-      };
-      
-      if (merkHp != null) body['merk_hp'] = merkHp;
-      if (modelHp != null) body['model_hp'] = modelHp;
-      if (hargaHp != null) body['harga_hp'] = hargaHp.toString();
-      
-      final response = await http.post(
-        Uri.parse('$baseUrl/pengajuan.php'),
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: body,
-      );
-      
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      }
-      return {'success': false, 'message': 'Server error'};
-    } catch (e) {
-      return {'success': false, 'message': 'Connection error: $e'};
-    }
-  }
-
-  static Future<List<dynamic>> getPengajuan(String role, int userId) async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/pengajuan.php?action=list_pengajuan&role=$role&user_id=$userId'),
-      );
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      }
-      return [];
-    } catch (e) {
-      return [];
-    }
-  }
-
-  static Future<Map<String, dynamic>> prosesAdmin({
-    required int pengajuanId,
-    required int adminId,
-    required String action,
-    required String catatan,
-  }) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/pengajuan.php'),
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {
-          'action': 'proses_admin',
-          'pengajuan_id': pengajuanId.toString(),
-          'admin_id': adminId.toString(),
-          'admin_action': action,
-          'catatan': catatan,
-        },
-      );
-      
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      }
-      return {'success': false, 'message': 'Server error'};
-    } catch (e) {
-      return {'success': false, 'message': 'Connection error: $e'};
-    }
-  }
-
-  static Future<Map<String, dynamic>> approvalKetua({
-    required int pengajuanId,
-    required int ketuaId,
-    required String action,
-    required String catatan,
-  }) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/pengajuan.php'),
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {
-          'action': 'approval_ketua',
-          'pengajuan_id': pengajuanId.toString(),
-          'ketua_id': ketuaId.toString(),
-          'ketua_action': action,
-          'catatan': catatan,
-        },
-      );
-      
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      }
-      return {'success': false, 'message': 'Server error'};
-    } catch (e) {
-      return {'success': false, 'message': 'Connection error: $e'};
-    }
-  }
-
-  // ================= STATUS PINJAMAN =================
-  static Future<Map<String, dynamic>> getStatusPinjaman(int pinjamanId) async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/status_pinjaman.php?action=get_status_pinjaman&pinjaman_id=$pinjamanId'),
-      );
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      }
-      return {'success': false, 'message': 'Server error'};
-    } catch (e) {
-      return {'success': false, 'message': 'Connection error: $e'};
-    }
-  }
-
-  static Future<Map<String, dynamic>> updateStatusLunas() async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/status_pinjaman.php'),
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {'action': 'update_status_lunas'},
-      );
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      }
-      return {'success': false, 'message': 'Server error'};
-    } catch (e) {
-      return {'success': false, 'message': 'Connection error: $e'};
-    }
-  }
-
-  static Future<List<dynamic>> getDetailPinjaman(int userId) async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/status_pinjaman.php?action=get_detail_pinjaman&user_id=$userId'),
-      );
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      }
-      return [];
-    } catch (e) {
-      return [];
-    }
+    return {
+      'success': true,
+      'message': 'Pengajuan pinjaman berhasil disubmit (offline mode)',
+    };
   }
 }

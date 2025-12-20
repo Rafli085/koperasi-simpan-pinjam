@@ -5,7 +5,9 @@ class ProdukKoperasi {
   final double bungaPersen;
   final String bungaPer;
   final int? tenorMin;
-  final bool isActive;
+  final int? tenorMax;
+  final double? limitMin;
+  final double? limitMax;
 
   ProdukKoperasi({
     required this.id,
@@ -14,67 +16,22 @@ class ProdukKoperasi {
     required this.bungaPersen,
     required this.bungaPer,
     this.tenorMin,
-    required this.isActive,
+    this.tenorMax,
+    this.limitMin,
+    this.limitMax,
   });
 
   factory ProdukKoperasi.fromJson(Map<String, dynamic> json) {
     return ProdukKoperasi(
-      id: int.parse(json['id'].toString()),
+      id: json['id'] ?? 0,
       namaProduk: json['nama_produk'] ?? '',
       jenis: json['jenis'] ?? '',
-      bungaPersen: double.parse(json['bunga_persen'].toString()),
-      bungaPer: json['bunga_per'] ?? 'tahun',
-      tenorMin: json['tenor_min'] != null ? int.parse(json['tenor_min'].toString()) : null,
-      isActive: json['is_active'] == '1' || json['is_active'] == 1,
-    );
-  }
-}
-
-class LimitPinjaman {
-  final int id;
-  final int produkId;
-  final int masaAnggotaMinTahun;
-  final double limitMaksimal;
-
-  LimitPinjaman({
-    required this.id,
-    required this.produkId,
-    required this.masaAnggotaMinTahun,
-    required this.limitMaksimal,
-  });
-
-  factory LimitPinjaman.fromJson(Map<String, dynamic> json) {
-    return LimitPinjaman(
-      id: int.parse(json['id'].toString()),
-      produkId: int.parse(json['produk_id'].toString()),
-      masaAnggotaMinTahun: int.parse(json['masa_anggota_min_tahun'].toString()),
-      limitMaksimal: double.parse(json['limit_maksimal'].toString()),
-    );
-  }
-}
-
-class DetailHP {
-  final int id;
-  final int pinjamanId;
-  final String merkHp;
-  final String modelHp;
-  final double hargaHp;
-
-  DetailHP({
-    required this.id,
-    required this.pinjamanId,
-    required this.merkHp,
-    required this.modelHp,
-    required this.hargaHp,
-  });
-
-  factory DetailHP.fromJson(Map<String, dynamic> json) {
-    return DetailHP(
-      id: int.parse(json['id'].toString()),
-      pinjamanId: int.parse(json['pinjaman_id'].toString()),
-      merkHp: json['merk_hp'] ?? '',
-      modelHp: json['model_hp'] ?? '',
-      hargaHp: double.parse(json['harga_hp'].toString()),
+      bungaPersen: (json['bunga_persen'] ?? 0).toDouble(),
+      bungaPer: json['bunga_per'] ?? '',
+      tenorMin: json['tenor_min'],
+      tenorMax: json['tenor_max'],
+      limitMin: json['limit_min']?.toDouble(),
+      limitMax: json['limit_max']?.toDouble(),
     );
   }
 }
