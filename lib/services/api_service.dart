@@ -3,8 +3,8 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 
 class ApiService {
-  static const String webBaseUrl = 'http://localhost/koperasi_api';
-  static const String mobileBaseUrl = 'http://localhost/koperasi_api';
+  static const String webBaseUrl = 'http://10.242.171.71/koperasi_api';
+  static const String mobileBaseUrl = 'http://10.242.171.71/koperasi_api';
 
   static String get baseUrl {
     return kIsWeb ? webBaseUrl : mobileBaseUrl;
@@ -17,20 +17,16 @@ class ApiService {
     try {
       final response = await http.post(
         Uri.parse('${baseUrl}/users.php'),
-        body: {
-          'action': 'login',
-          'username': username,
-          'password': password,
-        },
+        body: {'action': 'login', 'username': username, 'password': password},
       );
-      
+
       if (response.statusCode == 200) {
         return json.decode(response.body);
       }
     } catch (e) {
       print('Error during login: $e');
     }
-    
+
     return {'success': false, 'message': 'Login gagal'};
   }
 
@@ -39,14 +35,14 @@ class ApiService {
       final response = await http.get(
         Uri.parse('${baseUrl}/users.php?action=list'),
       );
-      
+
       if (response.statusCode == 200) {
         return json.decode(response.body);
       }
     } catch (e) {
       print('Error getting users: $e');
     }
-    
+
     return [];
   }
 
@@ -67,7 +63,7 @@ class ApiService {
           'role': role,
         },
       );
-      
+
       if (response.statusCode == 200) {
         return json.decode(response.body);
       }
@@ -95,15 +91,15 @@ class ApiService {
         'bunga_per': 'bulan',
         'tenor_min': 1,
         'tenor_max': 12,
-      }
+      },
     ];
   }
 
-  static Future<Map<String, dynamic>> calculateLimit(int userId, int produkId) async {
-    return {
-      'success': true,
-      'limit_maksimal': 5000000,
-    };
+  static Future<Map<String, dynamic>> calculateLimit(
+    int userId,
+    int produkId,
+  ) async {
+    return {'success': true, 'limit_maksimal': 5000000};
   }
 
   static Future<Map<String, dynamic>> ajukanPinjaman({
@@ -129,7 +125,7 @@ class ApiService {
       final response = await http.get(
         Uri.parse('${baseUrl}/events.php?action=get_events'),
       );
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data is List) {
@@ -139,7 +135,7 @@ class ApiService {
     } catch (e) {
       print('Error getting events from server: $e');
     }
-    
+
     return _offlineEvents;
   }
 
@@ -158,26 +154,31 @@ class ApiService {
         'type': type,
         'poll_options': pollOptions,
       };
-      
+
       if (endDate != null) {
         body['end_date'] = endDate.toIso8601String();
       }
-      
+
       final response = await http.post(
         Uri.parse('${baseUrl}/events.php'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(body),
       );
-      
+
       if (response.statusCode == 200) {
         return json.decode(response.body);
       }
     } catch (e) {
       print('Error creating event on server: $e');
     }
-    
-    final newId = _offlineEvents.isEmpty ? 1 : _offlineEvents.map((e) => e['id'] as int).reduce((a, b) => a > b ? a : b) + 1;
-    
+
+    final newId = _offlineEvents.isEmpty
+        ? 1
+        : _offlineEvents
+                  .map((e) => e['id'] as int)
+                  .reduce((a, b) => a > b ? a : b) +
+              1;
+
     final newEvent = {
       'id': newId,
       'title': title,
@@ -189,11 +190,13 @@ class ApiService {
     };
 
     if (type == 'poll' && pollOptions != null) {
-      newEvent['poll_options'] = pollOptions.asMap().entries.map((entry) => {
-        'id': entry.key + 1,
-        'text': entry.value,
-        'votes': 0,
-      }).toList();
+      newEvent['poll_options'] = pollOptions
+          .asMap()
+          .entries
+          .map(
+            (entry) => {'id': entry.key + 1, 'text': entry.value, 'votes': 0},
+          )
+          .toList();
       newEvent['user_votes'] = <int, int>{};
     }
 
@@ -214,24 +217,24 @@ class ApiService {
         'title': title,
         'description': description,
       };
-      
+
       if (endDate != null) {
         body['end_date'] = endDate.toIso8601String();
       }
-      
+
       final response = await http.put(
         Uri.parse('${baseUrl}/events.php'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(body),
       );
-      
+
       if (response.statusCode == 200) {
         return json.decode(response.body);
       }
     } catch (e) {
       print('Error updating event on server: $e');
     }
-    
+
     final eventIndex = _offlineEvents.indexWhere((e) => e['id'] == eventId);
     if (eventIndex == -1) {
       return {'success': false, 'message': 'Event tidak ditemukan'};
@@ -240,7 +243,7 @@ class ApiService {
     _offlineEvents[eventIndex]['title'] = title;
     _offlineEvents[eventIndex]['description'] = description;
     _offlineEvents[eventIndex]['end_date'] = endDate?.toIso8601String();
-    
+
     return {'success': true, 'message': 'Event berhasil diupdate (offline)'};
   }
 
@@ -249,14 +252,14 @@ class ApiService {
       final response = await http.delete(
         Uri.parse('${baseUrl}/events.php?action=delete_event&id=$eventId'),
       );
-      
+
       if (response.statusCode == 200) {
         return json.decode(response.body);
       }
     } catch (e) {
       print('Error deleting event on server: $e');
     }
-    
+
     final eventIndex = _offlineEvents.indexWhere((e) => e['id'] == eventId);
     if (eventIndex == -1) {
       return {'success': false, 'message': 'Event tidak ditemukan'};
@@ -266,7 +269,11 @@ class ApiService {
     return {'success': true, 'message': 'Event berhasil dihapus (offline)'};
   }
 
-  static Future<Map<String, dynamic>> voteOnPoll(int eventId, int userId, int optionId) async {
+  static Future<Map<String, dynamic>> voteOnPoll(
+    int eventId,
+    int userId,
+    int optionId,
+  ) async {
     try {
       final response = await http.post(
         Uri.parse('${baseUrl}/events.php'),
@@ -278,14 +285,14 @@ class ApiService {
           'option_id': optionId,
         }),
       );
-      
+
       if (response.statusCode == 200) {
         return json.decode(response.body);
       }
     } catch (e) {
       print('Error voting on server: $e');
     }
-    
+
     final eventIndex = _offlineEvents.indexWhere((e) => e['id'] == eventId);
     if (eventIndex == -1) {
       return {'success': false, 'message': 'Event tidak ditemukan'};
@@ -305,7 +312,9 @@ class ApiService {
     final userVotes = event['user_votes'] as Map<int, int>;
     if (userVotes.containsKey(userId)) {
       final prevOptionId = userVotes[userId]!;
-      final prevOptionIndex = pollOptions.indexWhere((opt) => opt['id'] == prevOptionId);
+      final prevOptionIndex = pollOptions.indexWhere(
+        (opt) => opt['id'] == prevOptionId,
+      );
       if (prevOptionIndex != -1) {
         pollOptions[prevOptionIndex]['votes']--;
       }
