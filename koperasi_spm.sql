@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Dec 20, 2025 at 04:42 AM
+-- Generation Time: Dec 27, 2025 at 04:36 AM
 -- Server version: 8.4.3
 -- PHP Version: 8.1.32
 
@@ -47,6 +47,31 @@ CREATE TABLE `detail_hp` (
   `model_hp` varchar(100) NOT NULL,
   `harga_hp` decimal(15,2) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `events`
+--
+
+CREATE TABLE `events` (
+  `id` int NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text NOT NULL,
+  `type` enum('announcement','poll') NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `end_date` timestamp NULL DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT '1'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `events`
+--
+
+INSERT INTO `events` (`id`, `title`, `description`, `type`, `created_at`, `end_date`, `is_active`) VALUES
+(1, 'ddd', 'fff', 'announcement', '2025-12-27 02:28:17', NULL, 1),
+(4, 'dff', 'adff', 'poll', '2025-12-27 02:38:35', '2026-01-30 17:00:00', 1),
+(5, 'ddd', 'ffff', 'poll', '2025-12-27 02:43:09', '2026-01-30 17:00:00', 1);
 
 -- --------------------------------------------------------
 
@@ -133,6 +158,29 @@ INSERT INTO `pinjaman` (`id`, `pengajuan_id`, `user_id`, `produk_id`, `jenis_pro
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `poll_options`
+--
+
+CREATE TABLE `poll_options` (
+  `id` int NOT NULL,
+  `event_id` int NOT NULL,
+  `text` varchar(255) NOT NULL,
+  `votes` int DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `poll_options`
+--
+
+INSERT INTO `poll_options` (`id`, `event_id`, `text`, `votes`) VALUES
+(5, 4, 'df', 1),
+(6, 4, 'ffff', 0),
+(7, 5, 'ddd', 0),
+(8, 5, 'ffff', 1);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `produk_koperasi`
 --
 
@@ -201,7 +249,30 @@ INSERT INTO `users` (`id`, `username`, `nama`, `password`, `role`, `created_at`,
 (1, 'anggota1', 'Budi Santoso', '123456', 'anggota', '2025-12-18 03:15:41', '2020-01-01', 1),
 (2, 'admin', 'Admin Keuangan', 'admin123', 'admin_keuangan', '2025-12-18 03:15:41', NULL, 1),
 (3, 'ketua', 'Ketua Koperasi', 'ketua123', 'ketua', '2025-12-18 03:15:41', NULL, 1),
-(4, 'Mario', 'Mario', '123123', 'anggota', '2025-12-18 06:26:30', '2022-01-01', 1);
+(4, 'Mario', 'Mario', '123123', 'anggota', '2025-12-18 06:26:30', '2022-01-01', 1),
+(5, 'elen', 'elen', '123', 'anggota', '2025-12-27 03:04:33', NULL, 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_votes`
+--
+
+CREATE TABLE `user_votes` (
+  `id` int NOT NULL,
+  `event_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `option_id` int NOT NULL,
+  `voted_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `user_votes`
+--
+
+INSERT INTO `user_votes` (`id`, `event_id`, `user_id`, `option_id`, `voted_at`) VALUES
+(3, 4, 1, 5, '2025-12-27 02:38:42'),
+(4, 5, 1, 8, '2025-12-27 02:43:18');
 
 --
 -- Indexes for dumped tables
@@ -220,6 +291,12 @@ ALTER TABLE `cicilan`
 ALTER TABLE `detail_hp`
   ADD PRIMARY KEY (`id`),
   ADD KEY `pinjaman_id` (`pinjaman_id`);
+
+--
+-- Indexes for table `events`
+--
+ALTER TABLE `events`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `limit_pinjaman`
@@ -247,6 +324,13 @@ ALTER TABLE `pinjaman`
   ADD KEY `pinjaman_ibfk_2` (`pengajuan_id`);
 
 --
+-- Indexes for table `poll_options`
+--
+ALTER TABLE `poll_options`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `event_id` (`event_id`);
+
+--
 -- Indexes for table `produk_koperasi`
 --
 ALTER TABLE `produk_koperasi`
@@ -268,6 +352,15 @@ ALTER TABLE `users`
   ADD UNIQUE KEY `username_2` (`username`);
 
 --
+-- Indexes for table `user_votes`
+--
+ALTER TABLE `user_votes`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_user_event` (`user_id`,`event_id`),
+  ADD KEY `event_id` (`event_id`),
+  ADD KEY `option_id` (`option_id`);
+
+--
 -- AUTO_INCREMENT for dumped tables
 --
 
@@ -282,6 +375,12 @@ ALTER TABLE `cicilan`
 --
 ALTER TABLE `detail_hp`
   MODIFY `id` int NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `events`
+--
+ALTER TABLE `events`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `limit_pinjaman`
@@ -302,6 +401,12 @@ ALTER TABLE `pinjaman`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
+-- AUTO_INCREMENT for table `poll_options`
+--
+ALTER TABLE `poll_options`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
 -- AUTO_INCREMENT for table `produk_koperasi`
 --
 ALTER TABLE `produk_koperasi`
@@ -317,6 +422,12 @@ ALTER TABLE `simpanan`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT for table `user_votes`
+--
+ALTER TABLE `user_votes`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
@@ -358,10 +469,23 @@ ALTER TABLE `pinjaman`
   ADD CONSTRAINT `pinjaman_ibfk_2` FOREIGN KEY (`pengajuan_id`) REFERENCES `pengajuan_pinjaman` (`id`);
 
 --
+-- Constraints for table `poll_options`
+--
+ALTER TABLE `poll_options`
+  ADD CONSTRAINT `poll_options_ibfk_1` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `simpanan`
 --
 ALTER TABLE `simpanan`
   ADD CONSTRAINT `simpanan_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
+
+--
+-- Constraints for table `user_votes`
+--
+ALTER TABLE `user_votes`
+  ADD CONSTRAINT `user_votes_ibfk_1` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `user_votes_ibfk_2` FOREIGN KEY (`option_id`) REFERENCES `poll_options` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
