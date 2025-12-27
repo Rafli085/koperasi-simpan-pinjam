@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'simpanan_anggota_page.dart';
 import 'pinjaman_anggota_page.dart';
+import 'event_anggota_page.dart';
 
 class DashboardAnggotaLengkap extends StatelessWidget {
   final String username;
+  final int userId;
   final VoidCallback onLogout;
 
   const DashboardAnggotaLengkap({
     super.key,
     required this.username,
+    required this.userId,
     required this.onLogout,
   });
 
@@ -64,10 +67,28 @@ class DashboardAnggotaLengkap extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Card(
+            color: Colors.purple[50],
+            child: ListTile(
+              leading: const Icon(Icons.event, color: Colors.purple),
+              title: const Text('Event & Pengumuman'),
+              subtitle: const Text('Lihat pengumuman dan ikuti polling'),
+              trailing: const Icon(Icons.arrow_forward_ios),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => EventAnggotaPage(userId: userId),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
             child: ListTile(
               leading: const Icon(Icons.info),
               title: const Text('Informasi Koperasi'),
-              subtitle: const Text('Pengumuman & agenda'),
+              subtitle: const Text('Kontak dan informasi umum'),
             ),
           ),
         ],

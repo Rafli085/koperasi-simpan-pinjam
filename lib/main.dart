@@ -41,6 +41,7 @@ class _KoperasiAppState extends State<KoperasiApp> {
   String? _username;
   String? _role; // anggota | admin_keuangan | ketua
   String? _mode; // sederhana | lengkap (anggota saja)
+  int? _userId;
 
   @override
   void initState() {
@@ -54,6 +55,7 @@ class _KoperasiAppState extends State<KoperasiApp> {
       _username = prefs.getString('username');
       _role = prefs.getString('role');
       _mode = prefs.getString('mode');
+      _userId = prefs.getInt('userId');
       _themeMode =
           (prefs.getBool('darkTheme') ?? false) ? ThemeMode.dark : ThemeMode.light;
     });
@@ -63,14 +65,16 @@ class _KoperasiAppState extends State<KoperasiApp> {
   // SESSION & PREFERENCES
   // ======================
 
-  Future<void> login(String username, String role) async {
+  Future<void> login(String username, String role, int userId) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('username', username);
     await prefs.setString('role', role);
+    await prefs.setInt('userId', userId);
 
     setState(() {
       _username = username;
       _role = role;
+      _userId = userId;
     });
   }
 
@@ -97,11 +101,13 @@ class _KoperasiAppState extends State<KoperasiApp> {
     await prefs.remove('username');
     await prefs.remove('role');
     await prefs.remove('mode');
+    await prefs.remove('userId');
 
     setState(() {
       _username = null;
       _role = null;
       _mode = null;
+      _userId = null;
     });
   }
 
@@ -124,12 +130,14 @@ class _KoperasiAppState extends State<KoperasiApp> {
       if (_mode == 'sederhana') {
         return DashboardAnggotaSederhana(
           username: _username!,
+          userId: _userId ?? 1,
           onLogout: logout,
         );
       }
 
       return DashboardAnggotaLengkap(
         username: _username!,
+        userId: _userId ?? 1,
         onLogout: logout,
       );
     }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../data/dummy_users.dart';
+import '../services/api_service.dart';
 
 class LoginPage extends StatelessWidget {
-  final Function(String username, String role) onLogin;
+  final Function(String username, String role, int userId) onLogin;
 
   const LoginPage({super.key, required this.onLogin});
 
@@ -22,29 +22,31 @@ class LoginPage extends StatelessWidget {
         return;
       }
 
-      // Login via MySQL API
-      final user = await DummyUsers.login(username, password);
+      final response = await ApiService.login(username, password);
       
-      if (user == null) {
+      if (!response['success']) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Username atau password salah')),
+          SnackBar(content: Text(response['message'] ?? 'Login gagal')),
         );
         return;
       }
 
-      onLogin(username, user.role);
+      final user = response['user'];
+      onLogin(username, user['role'], user['id']);
     }
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(title: const Text('Login')),
-      body: Center(
-        child: Card(
-          margin: const EdgeInsets.all(24),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+      body: SingleChildScrollView(
+        child: Center(
+          child: Card(
+            margin: const EdgeInsets.all(24),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                 const Text(
                   'Login Koperasi',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -74,7 +76,8 @@ class LoginPage extends StatelessWidget {
                     child: const Text('Login'),
                   ),
                 ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

@@ -4,6 +4,7 @@ import 'pinjaman_admin_page.dart';
 import 'kelola_anggota_page.dart';
 import 'approval_pinjaman_page.dart';
 import 'dashboard_statistik_page.dart';
+import 'event_admin_page.dart';
 
 class DashboardAdmin extends StatelessWidget {
   final VoidCallback onLogout;
@@ -121,6 +122,27 @@ class DashboardAdmin extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (_) => const KelolaAnggotaPage(),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // ===== EVENT =====
+          Card(
+            color: Colors.purple[50],
+            child: ListTile(
+              leading: const Icon(Icons.event, color: Colors.purple),
+              title: const Text('Kelola Event'),
+              subtitle: const Text('Pengumuman dan polling untuk anggota'),
+              trailing: const Icon(Icons.arrow_forward_ios),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const EventAdminPage(),
                   ),
                 );
               },
