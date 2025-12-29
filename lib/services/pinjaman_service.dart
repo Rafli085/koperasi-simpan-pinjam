@@ -1,15 +1,14 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/pinjaman_model.dart';
+import 'api_service.dart';
 
 class PinjamanService {
-  static const String baseUrl = 'http://localhost/koperasi_api';
-  
   // Get pinjaman by user
   static Future<List<Pinjaman>> getPinjamanByUser(int userId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/pinjaman.php?user_id=$userId'),
+        Uri.parse('${ApiService.baseUrl}/pinjaman.php?user_id=$userId'),
       );
       
       if (response.statusCode == 200) {
@@ -30,7 +29,7 @@ class PinjamanService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/pinjaman.php'),
+        Uri.parse('${ApiService.baseUrl}/pinjaman.php'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'user_id': userId,
@@ -56,7 +55,7 @@ class PinjamanService {
   }) async {
     try {
       final response = await http.put(
-        Uri.parse('$baseUrl/pinjaman.php'),
+        Uri.parse('${ApiService.baseUrl}/pinjaman.php'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'id': pinjamanId,
@@ -78,7 +77,7 @@ class PinjamanService {
   static Future<List<Pinjaman>> getAllPinjaman() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/pinjaman.php'), // No user_id to get all
+        Uri.parse('${ApiService.baseUrl}/pinjaman.php'),
       );
 
       if (response.statusCode == 200) {
@@ -97,10 +96,8 @@ class PinjamanService {
     required double jumlah,
   }) async {
     try {
-      // Di API, ini mungkin sebuah POST ke endpoint yang berbeda,
-      // misalnya /cicilan.php
       final response = await http.post(
-        Uri.parse('$baseUrl/cicilan.php'), // Asumsi endpoint cicilan
+        Uri.parse('${ApiService.baseUrl}/cicilan.php'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'pinjaman_id': pinjamanId,
