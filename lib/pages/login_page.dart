@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../widgets/server_settings_dialog.dart';
 
 class LoginPage extends StatelessWidget {
   final Function(String username, String role, int userId) onLogin;
@@ -37,7 +38,25 @@ class LoginPage extends StatelessWidget {
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      appBar: AppBar(title: const Text('Login')),
+      appBar: AppBar(
+        title: const Text('Login'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () async {
+              final result = await showDialog<bool>(
+                context: context,
+                builder: (context) => const ServerSettingsDialog(),
+              );
+              if (result == true) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Pengaturan server berhasil disimpan')),
+                );
+              }
+            },
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         child: Center(
           child: Card(

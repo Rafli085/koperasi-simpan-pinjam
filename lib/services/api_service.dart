@@ -1,13 +1,12 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
+import 'settings_service.dart';
 
 class ApiService {
-  static const String webBaseUrl = 'http://10.242.171.71/koperasi_api';
-  static const String mobileBaseUrl = 'http://10.242.171.71/koperasi_api';
-
-  static String get baseUrl {
-    return kIsWeb ? webBaseUrl : mobileBaseUrl;
+  static Future<String> get baseUrl async {
+    final ip = await SettingsService.getServerIp();
+    return 'http://$ip/koperasi_api';
   }
 
   static Future<Map<String, dynamic>> login(
@@ -15,8 +14,9 @@ class ApiService {
     String password,
   ) async {
     try {
+      final url = await baseUrl;
       final response = await http.post(
-        Uri.parse('${baseUrl}/users.php'),
+        Uri.parse('$url/users.php'),
         body: {'action': 'login', 'username': username, 'password': password},
       );
 
@@ -32,8 +32,9 @@ class ApiService {
 
   static Future<List<dynamic>> getUsers() async {
     try {
+      final url = await baseUrl;
       final response = await http.get(
-        Uri.parse('${baseUrl}/users.php?action=list'),
+        Uri.parse('$url/users.php?action=list'),
       );
 
       if (response.statusCode == 200) {
@@ -53,8 +54,9 @@ class ApiService {
     required String role,
   }) async {
     try {
+      final url = await baseUrl;
       final response = await http.post(
-        Uri.parse('${baseUrl}/users.php'),
+        Uri.parse('$url/users.php'),
         body: {
           'action': 'add',
           'username': username,
@@ -122,8 +124,9 @@ class ApiService {
 
   static Future<List<dynamic>> getEvents() async {
     try {
+      final url = await baseUrl;
       final response = await http.get(
-        Uri.parse('${baseUrl}/events.php?action=get_events'),
+        Uri.parse('$url/events.php?action=get_events'),
       );
 
       if (response.statusCode == 200) {
@@ -159,8 +162,9 @@ class ApiService {
         body['end_date'] = endDate.toIso8601String();
       }
 
+      final url = await baseUrl;
       final response = await http.post(
-        Uri.parse('${baseUrl}/events.php'),
+        Uri.parse('$url/events.php'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(body),
       );
@@ -222,8 +226,9 @@ class ApiService {
         body['end_date'] = endDate.toIso8601String();
       }
 
+      final url = await baseUrl;
       final response = await http.put(
-        Uri.parse('${baseUrl}/events.php'),
+        Uri.parse('$url/events.php'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(body),
       );
@@ -249,8 +254,9 @@ class ApiService {
 
   static Future<Map<String, dynamic>> deleteEvent(int eventId) async {
     try {
+      final url = await baseUrl;
       final response = await http.delete(
-        Uri.parse('${baseUrl}/events.php?action=delete_event&id=$eventId'),
+        Uri.parse('$url/events.php?action=delete_event&id=$eventId'),
       );
 
       if (response.statusCode == 200) {
@@ -275,8 +281,9 @@ class ApiService {
     int optionId,
   ) async {
     try {
+      final url = await baseUrl;
       final response = await http.post(
-        Uri.parse('${baseUrl}/events.php'),
+        Uri.parse('$url/events.php'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'action': 'vote_poll',

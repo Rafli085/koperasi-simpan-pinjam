@@ -7,8 +7,9 @@ class PinjamanService {
   // Get pinjaman by user
   static Future<List<Pinjaman>> getPinjamanByUser(int userId) async {
     try {
+      final url = await ApiService.baseUrl;
       final response = await http.get(
-        Uri.parse('${ApiService.baseUrl}/pinjaman.php?user_id=$userId'),
+        Uri.parse('$url/pinjaman.php?user_id=$userId'),
       );
       
       if (response.statusCode == 200) {
@@ -28,8 +29,9 @@ class PinjamanService {
     required int tenor,
   }) async {
     try {
+      final url = await ApiService.baseUrl;
       final response = await http.post(
-        Uri.parse('${ApiService.baseUrl}/pinjaman.php'),
+        Uri.parse('$url/pinjaman.php'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'user_id': userId,
@@ -54,8 +56,9 @@ class PinjamanService {
     required String status,
   }) async {
     try {
+      final url = await ApiService.baseUrl;
       final response = await http.put(
-        Uri.parse('${ApiService.baseUrl}/pinjaman.php'),
+        Uri.parse('$url/pinjaman.php'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'id': pinjamanId,
@@ -76,8 +79,9 @@ class PinjamanService {
   // Get all pinjaman (for admin)
   static Future<List<Pinjaman>> getAllPinjaman() async {
     try {
+      final url = await ApiService.baseUrl;
       final response = await http.get(
-        Uri.parse('${ApiService.baseUrl}/pinjaman.php'),
+        Uri.parse('$url/pinjaman.php'),
       );
 
       if (response.statusCode == 200) {
@@ -96,8 +100,9 @@ class PinjamanService {
     required double jumlah,
   }) async {
     try {
+      final url = await ApiService.baseUrl;
       final response = await http.post(
-        Uri.parse('${ApiService.baseUrl}/cicilan.php'),
+        Uri.parse('$url/cicilan.php'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'pinjaman_id': pinjamanId,

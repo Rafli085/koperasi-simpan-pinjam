@@ -7,8 +7,9 @@ class SimpananService {
   // Get simpanan by user
   static Future<List<Simpanan>> getSimpananByUser(int userId) async {
     try {
+      final url = await ApiService.baseUrl;
       final response = await http.get(
-        Uri.parse('${ApiService.baseUrl}/simpanan.php?user_id=$userId'),
+        Uri.parse('$url/simpanan.php?user_id=$userId'),
       );
       
       if (response.statusCode == 200) {
@@ -27,8 +28,9 @@ class SimpananService {
     required double jumlah,
   }) async {
     try {
+      final url = await ApiService.baseUrl;
       final response = await http.post(
-        Uri.parse('${ApiService.baseUrl}/simpanan.php'),
+        Uri.parse('$url/simpanan.php'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'user_id': userId,
