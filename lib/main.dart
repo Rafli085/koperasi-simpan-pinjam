@@ -8,9 +8,7 @@ import 'data/simpanan_repository.dart';
 import 'data/pinjaman_repository.dart';
 
 import 'pages/login_page.dart';
-import 'pages/mode_selection_page.dart';
 import 'pages/dashboard_anggota_sederhana.dart';
-import 'pages/dashboard_anggota_lengkap.dart';
 import 'pages/dashboard_admin.dart';
 
 void main() {
@@ -40,7 +38,6 @@ class _KoperasiAppState extends State<KoperasiApp> {
 
   String? _username;
   String? _role; // anggota | admin_keuangan | ketua
-  String? _mode; // sederhana | lengkap (anggota saja)
   int? _userId;
 
   @override
@@ -54,7 +51,6 @@ class _KoperasiAppState extends State<KoperasiApp> {
     setState(() {
       _username = prefs.getString('username');
       _role = prefs.getString('role');
-      _mode = prefs.getString('mode');
       _userId = prefs.getInt('userId');
       _themeMode =
           (prefs.getBool('darkTheme') ?? false) ? ThemeMode.dark : ThemeMode.light;
@@ -78,14 +74,7 @@ class _KoperasiAppState extends State<KoperasiApp> {
     });
   }
 
-  Future<void> setMode(String mode) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('mode', mode);
 
-    setState(() {
-      _mode = mode;
-    });
-  }
 
   Future<void> setTheme(ThemeMode mode) async {
     final prefs = await SharedPreferences.getInstance();
@@ -100,13 +89,11 @@ class _KoperasiAppState extends State<KoperasiApp> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('username');
     await prefs.remove('role');
-    await prefs.remove('mode');
     await prefs.remove('userId');
 
     setState(() {
       _username = null;
       _role = null;
-      _mode = null;
       _userId = null;
     });
   }
@@ -123,19 +110,7 @@ class _KoperasiAppState extends State<KoperasiApp> {
 
     // ROLE: ANGGOTA
     if (_role == 'anggota') {
-      if (_mode == null) {
-        return ModeSelectionPage(onSelectMode: setMode);
-      }
-
-      if (_mode == 'sederhana') {
-        return DashboardAnggotaSederhana(
-          username: _username!,
-          userId: _userId ?? 1,
-          onLogout: logout,
-        );
-      }
-
-      return DashboardAnggotaLengkap(
+      return DashboardAnggotaSederhana(
         username: _username!,
         userId: _userId ?? 1,
         onLogout: logout,
