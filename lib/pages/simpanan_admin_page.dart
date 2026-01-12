@@ -46,10 +46,76 @@ class _SimpananAdminPageState extends State<SimpananAdminPage> {
                 leading: const Icon(Icons.person),
                 title: Text(user.nama),
                 subtitle: Text('Total: ${Format.rupiah(total)}'),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit, color: Colors.blue),
+                      onPressed: () => _editSimpanan(user),
+                      tooltip: 'Edit Simpanan',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => _hapusSimpanan(user),
+                      tooltip: 'Hapus Simpanan',
+                    ),
+                  ],
+                ),
               );
             },
           );
         },
+      ),
+    );
+  }
+
+  void _editSimpanan(user) {
+    // Navigate to edit page or show dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Edit Simpanan ${user.nama}'),
+        content: const Text('Fitur edit simpanan akan segera tersedia'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _hapusSimpanan(user) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Simpanan'),
+        content: Text('Apakah Anda yakin ingin menghapus semua simpanan ${user.nama}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              
+              await SimpananService.hapusSemuaSimpanan(user.id!);
+              
+              setState(() {});
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Simpanan ${user.nama} berhasil dihapus'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Hapus'),
+          ),
+        ],
       ),
     );
   }

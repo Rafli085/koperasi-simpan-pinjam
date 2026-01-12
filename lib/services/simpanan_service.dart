@@ -57,4 +57,24 @@ class SimpananService {
       return 0.0;
     }
   }
+
+  // Hapus semua simpanan user
+  static Future<bool> hapusSemuaSimpanan(int userId) async {
+    try {
+      final url = await ApiService.baseUrl;
+      final response = await http.delete(
+        Uri.parse('$url/simpanan.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'user_id': userId}),
+      );
+      
+      if (response.statusCode == 200) {
+        final result = json.decode(response.body);
+        return result['success'] == true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
 }

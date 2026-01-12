@@ -3,10 +3,10 @@ import '../models/user_model.dart';
 
 class DummyUsers {
   static List<User> users = [
-    User(id: 1, username: 'anggota1', nama: 'Budi Santoso', password: '123456', role: 'anggota'),
-    User(id: 2, username: 'admin', nama: 'Admin Keuangan', password: 'admin123', role: 'admin_keuangan'),
-    User(id: 3, username: 'ketua', nama: 'Ketua Koperasi', password: 'ketua123', role: 'ketua'),
-    User(id: 4, username: 'Mario', nama: 'Mario', password: '123123', role: 'anggota'),
+    User(id: 1, username: 'anggota1', nomorAnggota: 'PMS-20-01-0001', nama: 'Budi Santoso', password: '123456', role: 'anggota'),
+    User(id: 2, username: 'admin', nomorAnggota: 'PMS-18-01-0001', nama: 'Admin Keuangan', password: 'admin123', role: 'admin_keuangan'),
+    User(id: 3, username: 'ketua', nomorAnggota: 'PMS-18-01-0002', nama: 'Ketua Koperasi', password: 'ketua123', role: 'ketua'),
+    User(id: 4, username: 'Mario', nomorAnggota: 'PMS-22-01-0001', nama: 'Mario', password: '123123', role: 'anggota'),
   ];
 
   /// WAJIB dipanggil saat app start

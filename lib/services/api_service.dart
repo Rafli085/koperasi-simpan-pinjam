@@ -76,6 +76,18 @@ class ApiService {
   }
 
   static Future<List<dynamic>> getPengajuan(String type, int userId) async {
+    try {
+      final url = await baseUrl;
+      final response = await http.get(
+        Uri.parse('$url/pengajuan.php?action=list&type=$type&user_id=$userId'),
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      print('Error getting pengajuan: $e');
+    }
     return [];
   }
 
@@ -114,9 +126,227 @@ class ApiService {
     String? modelHp,
     double? hargaHp,
   }) async {
+    try {
+      final url = await baseUrl;
+      final response = await http.post(
+        Uri.parse('$url/pengajuan.php'),
+        body: {
+          'action': 'ajukan',
+          'user_id': userId.toString(),
+          'produk_id': produkId.toString(),
+          'jumlah': jumlah.toString(),
+          'tenor': tenor.toString(),
+          'keperluan': keperluan,
+          'merk_hp': merkHp ?? '',
+          'model_hp': modelHp ?? '',
+          'harga_hp': hargaHp?.toString() ?? '0',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      print('Error submitting pengajuan: $e');
+    }
+    
     return {
-      'success': true,
-      'message': 'Pengajuan pinjaman berhasil disubmit (offline mode)',
+      'success': false,
+      'message': 'Gagal mengajukan pinjaman',
+    };
+  }
+
+  // Method untuk notifikasi admin
+  static Future<List<dynamic>> getPengajuanBaru({String? role}) async {
+    try {
+      final url = await baseUrl;
+      String endpoint = '$url/pengajuan.php?action=list_baru';
+      if (role != null) {
+        endpoint += '&role=$role';
+      }
+      
+      final response = await http.get(Uri.parse(endpoint));
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      print('Error getting pengajuan baru: $e');
+    }
+    return [];
+  }
+
+  // Method untuk memproses pengajuan ke pinjaman
+  static Future<Map<String, dynamic>> prosesKePinjaman(int pengajuanId) async {
+    try {
+      final url = await baseUrl;
+      final response = await http.post(
+        Uri.parse('$url/pengajuan.php'),
+        body: {
+          'action': 'proses_ke_pinjaman',
+          'pengajuan_id': pengajuanId.toString(),
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      print('Error processing pengajuan: $e');
+    }
+    return {
+      'success': false,
+      'message': 'Gagal memproses pengajuan',
+    };
+  }
+
+  // Method untuk admin memproses pengajuan ke ketua
+  static Future<Map<String, dynamic>> prosesAdmin(int pengajuanId) async {
+    try {
+      final url = await baseUrl;
+      final response = await http.post(
+        Uri.parse('$url/pengajuan.php'),
+        body: {
+          'action': 'proses_admin',
+          'pengajuan_id': pengajuanId.toString(),
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      print('Error processing admin: $e');
+    }
+    return {
+      'success': false,
+      'message': 'Gagal memproses pengajuan',
+    };
+  }
+
+  // Method untuk ketua menyetujui/menolak pengajuan
+  static Future<Map<String, dynamic>> approveKetua(int pengajuanId, String status) async {
+    try {
+      final url = await baseUrl;
+      final response = await http.post(
+        Uri.parse('$url/pengajuan.php'),
+        body: {
+          'action': 'approve_ketua',
+          'pengajuan_id': pengajuanId.toString(),
+          'status': status,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      print('Error approving ketua: $e');
+    }
+    return {
+      'success': false,
+      'message': 'Gagal memproses pengajuan',
+    };
+  }
+
+  // Method untuk menghapus pengajuan
+  static Future<Map<String, dynamic>> hapusPengajuan(int pengajuanId) async {
+    try {
+      final url = await baseUrl;
+      final response = await http.post(
+        Uri.parse('$url/pengajuan.php'),
+        body: {
+          'action': 'hapus',
+          'pengajuan_id': pengajuanId.toString(),
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      print('Error deleting pengajuan: $e');
+    }
+    return {
+      'success': false,
+      'message': 'Gagal menghapus pengajuan',
+    };
+  }
+
+  // Method untuk mengambil data pinjaman
+  static Future<List<dynamic>> getPinjaman({int? userId}) async {
+    try {
+      final url = await baseUrl;
+      String endpoint = '$url/pinjaman.php';
+      if (userId != null) {
+        endpoint += '?user_id=$userId';
+      }
+      
+      final response = await http.get(Uri.parse(endpoint));
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      print('Error getting pinjaman: $e');
+    }
+    return [];
+  }
+
+  // Method untuk menghapus pinjaman
+  static Future<Map<String, dynamic>> hapusPinjaman(int pinjamanId) async {
+    try {
+      final url = await baseUrl;
+      final response = await http.delete(
+        Uri.parse('$url/pinjaman.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'id': pinjamanId}),
+      );
+
+      if (response.statusCode == 200) {
+        final result = json.decode(response.body);
+        return {
+          'success': result['success'],
+          'message': result['success'] ? 'Pinjaman berhasil dihapus' : 'Gagal menghapus pinjaman'
+        };
+      }
+    } catch (e) {
+      print('Error deleting pinjaman: $e');
+    }
+    return {
+      'success': false,
+      'message': 'Gagal menghapus pinjaman',
+    };
+  }
+
+  // Method untuk edit pinjaman
+  static Future<Map<String, dynamic>> editPinjaman(int pinjamanId, double jumlah, int tenor) async {
+    try {
+      final url = await baseUrl;
+      final response = await http.put(
+        Uri.parse('$url/pinjaman.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'action': 'edit',
+          'id': pinjamanId,
+          'jumlah': jumlah,
+          'tenor': tenor,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final result = json.decode(response.body);
+        return {
+          'success': result['success'],
+          'message': result['success'] ? 'Pinjaman berhasil diupdate' : 'Gagal mengupdate pinjaman'
+        };
+      }
+    } catch (e) {
+      print('Error editing pinjaman: $e');
+    }
+    return {
+      'success': false,
+      'message': 'Gagal mengupdate pinjaman',
     };
   }
 

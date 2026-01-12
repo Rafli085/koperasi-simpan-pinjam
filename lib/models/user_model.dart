@@ -1,6 +1,7 @@
 class User {
   final int? id;
   final String username;
+  final String nomorAnggota; // Tambah field nomor anggota
   final String nama;
   final String password;
   final String role; // anggota, admin_keuangan, ketua
@@ -9,6 +10,7 @@ class User {
   User({
     this.id,
     required this.username,
+    required this.nomorAnggota,
     required this.nama,
     required this.password,
     required this.role,
@@ -20,6 +22,7 @@ class User {
     return User(
       id: json['id'],
       username: json['username'],
+      nomorAnggota: json['nomor_anggota'] ?? json['username'], // fallback ke username
       nama: json['nama'],
       password: json['password'],
       role: json['role'],
@@ -34,6 +37,7 @@ class User {
     return {
       'id': id,
       'username': username,
+      'nomor_anggota': nomorAnggota,
       'nama': nama,
       'password': password,
       'role': role,
@@ -45,6 +49,7 @@ class User {
   User copyWith({
     int? id,
     String? username,
+    String? nomorAnggota,
     String? nama,
     String? password,
     String? role,
@@ -53,6 +58,7 @@ class User {
     return User(
       id: id ?? this.id,
       username: username ?? this.username,
+      nomorAnggota: nomorAnggota ?? this.nomorAnggota,
       nama: nama ?? this.nama,
       password: password ?? this.password,
       role: role ?? this.role,

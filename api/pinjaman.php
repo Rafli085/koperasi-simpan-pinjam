@@ -75,28 +75,55 @@ switch ($method) {
     case 'PUT':
         $data = json_decode(file_get_contents('php://input'), true);
 
-        // TAMBAHAN AMAN:
-        // Jika status aktif / ditolak → set tanggal_approval
-        if (in_array($data['status'], ['aktif', 'ditolak'])) {
+        if(isset($data['action']) && $data['action'] == 'edit') {
+            // Edit pinjaman
             $stmt = $pdo->prepare("
                 UPDATE pinjaman
-                SET status = ?, tanggal_approval = NOW()
+                SET jumlah = ?, tenor = ?
                 WHERE id = ?
             ");
+            
+            $result = $stmt->execute([
+                $data['jumlah'],
+                $data['tenor'],
+                $data['id']
+            ]);
+            
+            echo json_encode(['success' => $result]);
         } else {
-            // fallback (perilaku lama tetap ada)
-            $stmt = $pdo->prepare("
-                UPDATE pinjaman
-                SET status = ?
-                WHERE id = ?
-            ");
+            // Update status (perilaku lama)
+            if (in_array($data['status'], ['aktif', 'ditolak'])) {
+                $stmt = $pdo->prepare("
+                    UPDATE pinjaman
+                    SET status = ?, tanggal_approval = NOW()
+                    WHERE id = ?
+                ");
+            } else {
+                $stmt = $pdo->prepare("
+                    UPDATE pinjaman
+                    SET status = ?
+                    WHERE id = ?
+                ");
+            }
+
+            $result = $stmt->execute([
+                $data['status'],
+                $data['id']
+            ]);
+
+            echo json_encode(['success' => $result]);
         }
+        break;
 
-        $result = $stmt->execute([
-            $data['status'],
-            $data['id']
-        ]);
-
+    // =====================
+    // DELETE PINJAMAN
+    // =====================
+    case 'DELETE':
+        $data = json_decode(file_get_contents('php://input'), true);
+        
+        $stmt = $pdo->prepare("DELETE FROM pinjaman WHERE id = ?");
+        $result = $stmt->execute([$data['id']]);
+        
         echo json_encode(['success' => $result]);
         break;
 }

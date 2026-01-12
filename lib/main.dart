@@ -120,6 +120,7 @@ class _KoperasiAppState extends State<KoperasiApp> {
     // ROLE: ADMIN / KETUA
     return DashboardAdmin(
       role: _role!,
+      username: _username!,
       onLogout: logout,
     );
   }

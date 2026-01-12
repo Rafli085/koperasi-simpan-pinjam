@@ -33,5 +33,19 @@ switch($method) {
             echo json_encode(['success' => false, 'message' => 'Failed to add simpanan']);
         }
         break;
+        
+    case 'DELETE':
+        // Delete simpanan by user
+        $data = json_decode(file_get_contents('php://input'), true);
+        
+        $stmt = $pdo->prepare("DELETE FROM simpanan WHERE user_id = ?");
+        $result = $stmt->execute([$data['user_id']]);
+        
+        if($result) {
+            echo json_encode(['success' => true, 'message' => 'Simpanan berhasil dihapus']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Gagal menghapus simpanan']);
+        }
+        break;
 }
 ?>
