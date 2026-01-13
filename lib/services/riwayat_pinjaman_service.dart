@@ -15,8 +15,11 @@ class RiwayatPinjamanService {
 
   // Get riwayat pinjaman berdasarkan user ID dari database
   static Future<List<Map<String, dynamic>>> getRiwayatByUserId(int userId) async {
-    final data = await ApiService.getPinjaman(userId: userId);
-    return data.cast<Map<String, dynamic>>();
+    final response = await ApiService.getPinjaman(userId: userId);
+    if (response['success']) {
+      return List<Map<String, dynamic>>.from(response['data']);
+    }
+    return [];
   }
 
   // Get riwayat pinjaman berdasarkan username (fallback untuk data lokal)
@@ -26,8 +29,11 @@ class RiwayatPinjamanService {
 
   // Get semua riwayat pinjaman dari database
   static Future<List<Map<String, dynamic>>> getAllRiwayat() async {
-    final data = await ApiService.getPinjaman();
-    return data.cast<Map<String, dynamic>>();
+    final response = await ApiService.getPinjaman();
+    if (response['success']) {
+      return List<Map<String, dynamic>>.from(response['data']);
+    }
+    return [];
   }
 
   // Update status pinjaman (untuk data lokal)

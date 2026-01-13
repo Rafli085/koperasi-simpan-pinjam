@@ -69,97 +69,107 @@ class _ServerSettingsDialogState extends State<ServerSettingsDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Pengaturan Server'),
-      content: _isLoading
-          ? const SizedBox(
-              height: 60,
-              child: Center(child: CircularProgressIndicator()),
-            )
-          : Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('Masukkan IP Address server:'),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _controller,
-                  decoration: const InputDecoration(
-                    labelText: 'IP Address',
-                    hintText: '192.168.1.100',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isTesting ? null : _testConnection,
-                    child: _isTesting
-                        ? const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              ),
-                              SizedBox(width: 8),
-                              Text('Testing...'),
-                            ],
-                          )
-                        : const Text('Test Koneksi'),
-                  ),
-                ),
-                if (_testResult != null)
-                  const SizedBox(height: 8),
-                if (_testResult != null)
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: _testResult!.contains('berhasil')
-                          ? Colors.green.withOpacity(0.1)
-                          : Colors.red.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(
-                        color: _testResult!.contains('berhasil')
-                            ? Colors.green
-                            : Colors.red,
+      content: SizedBox(
+        width: MediaQuery.of(context).size.width * 0.8,
+        child: _isLoading
+            ? const SizedBox(
+                height: 60,
+                child: Center(child: CircularProgressIndicator()),
+              )
+            : SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Masukkan IP Address server:'),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _controller,
+                      decoration: const InputDecoration(
+                        labelText: 'IP Address',
+                        hintText: '192.168.1.100',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.numberWithOptions(decimal: true),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isTesting ? null : _testConnection,
+                        child: _isTesting
+                            ? const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text('Testing...'),
+                                ],
+                              )
+                            : const Text('Test Koneksi'),
                       ),
                     ),
-                    child: Text(
-                      _testResult!,
-                      style: TextStyle(
-                        color: _testResult!.contains('berhasil')
-                            ? Colors.green.shade700
-                            : Colors.red.shade700,
-                        fontSize: 12,
+                    if (_testResult != null)
+                      const SizedBox(height: 8),
+                    if (_testResult != null)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: _testResult!.contains('berhasil')
+                              ? Colors.green.withOpacity(0.1)
+                              : Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: _testResult!.contains('berhasil')
+                                ? Colors.green
+                                : Colors.red,
+                          ),
+                        ),
+                        child: Text(
+                          _testResult!,
+                          style: TextStyle(
+                            color: _testResult!.contains('berhasil')
+                                ? Colors.green.shade700
+                                : Colors.red.shade700,
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-              ],
-            ),
+                  ],
+                ),
+              ),
+      ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Batal'),
-        ),
-        TextButton(
-          onPressed: () async {
-            await SettingsService.resetServerIp();
-            Navigator.pop(context, true);
-          },
-          child: const Text('Reset'),
-        ),
-        ElevatedButton(
-          onPressed: _isLoading
-              ? null
-              : () async {
-                  final ip = _controller.text.trim();
-                  if (ip.isNotEmpty) {
-                    await SettingsService.setServerIp(ip);
-                    Navigator.pop(context, true);
-                  }
-                },
-          child: const Text('Simpan'),
+        Wrap(
+          children: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () async {
+                await SettingsService.resetServerIp();
+                Navigator.pop(context, true);
+              },
+              child: const Text('Reset'),
+            ),
+            ElevatedButton(
+              onPressed: _isLoading
+                  ? null
+                  : () async {
+                      final ip = _controller.text.trim();
+                      if (ip.isNotEmpty) {
+                        await SettingsService.setServerIp(ip);
+                        Navigator.pop(context, true);
+                      }
+                    },
+              child: const Text('Simpan'),
+            ),
+          ],
         ),
       ],
     );

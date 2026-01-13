@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import '../widgets/server_settings_dialog.dart';
 
@@ -68,6 +69,13 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     }
 
     final user = response['user'];
+
+    // Simpan user_id ke SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('user_id', user['id']);
+    await prefs.setString('username', user['username']);
+    await prefs.setString('role', user['role']);
+
     widget.onLogin(username, user['role'], user['id']);
   }
 
@@ -131,7 +139,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                       TextField(
                         controller: usernameController,
                         decoration: const InputDecoration(
-                          labelText: 'Username / No Anggota',
+                          labelText: 'Username',
                           border: OutlineInputBorder(),
                         ),
                       ),

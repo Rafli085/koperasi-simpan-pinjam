@@ -14,69 +14,130 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 switch($method) {
     case 'POST':
-        // Add new cicilan
-        $data = json_decode(file_get_contents('php://input'), true);
-        
-        try {
-            $conn->begin_transaction();
-            
-            // Insert cicilan
-            $stmt = $conn->prepare("INSERT INTO cicilan (pinjaman_id, jumlah) VALUES (?, ?)");
-            $stmt->bind_param("id", $data['pinjaman_id'], $data['jumlah']);
-            $result = $stmt->execute();
-            
-            if($result) {
-                // Check if pinjaman should be marked as lunas
-                $pinjaman_id = $data['pinjaman_id'];
+        if($_POST['action'] == 'bayar') {
+            try {
+                $pdo->beginTransaction();
                 
-                // Get pinjaman data with bunga
-                $sql = "SELECT p.jumlah, p.tenor, pk.bunga_persen, pk.bunga_per 
-                        FROM pinjaman p 
-                        JOIN produk_koperasi pk ON p.produk_id = pk.id 
-                        WHERE p.id = ?";
-                $stmt = $conn->prepare($sql);
-                $stmt->bind_param("i", $pinjaman_id);
-                $stmt->execute();
-                $pinjaman = $stmt->get_result()->fetch_assoc();
+                $tanggal = isset($_POST['tanggal']) ? $_POST['tanggal'] : date('Y-m-d');
                 
-                // Get total cicilan
-                $sql = "SELECT COALESCE(SUM(jumlah), 0) as total_cicilan FROM cicilan WHERE pinjaman_id = ?";
-                $stmt = $conn->prepare($sql);
-                $stmt->bind_param("i", $pinjaman_id);
-                $stmt->execute();
-                $result_cicilan = $stmt->get_result()->fetch_assoc();
-                $total_cicilan = $result_cicilan['total_cicilan'];
+                // Insert cicilan
+                $stmt = $pdo->prepare("
+                    INSERT INTO cicilan (pinjaman_id, jumlah, tanggal) 
+                    VALUES (?, ?, ?)
+                ");
+                $stmt->execute([$_POST['pinjaman_id'], $_POST['jumlah_bayar'], $tanggal]);
                 
-                // Calculate total yang harus dibayar
-                $pokok = $pinjaman['jumlah'];
-                $bunga_persen = $pinjaman['bunga_persen'];
+                // Hitung total cicilan
+                $stmt = $pdo->prepare("SELECT SUM(jumlah) as total_cicilan FROM cicilan WHERE pinjaman_id = ?");
+                $stmt->execute([$_POST['pinjaman_id']]);
+                $totalCicilan = $stmt->fetchColumn() ?: 0;
+                
+                // Get pinjaman details untuk hitung bunga
+                $stmt = $pdo->prepare("
+                    SELECT p.jumlah, p.tenor, pk.nama_produk 
+                    FROM pinjaman p 
+                    LEFT JOIN produk_koperasi pk ON p.produk_id = pk.id 
+                    WHERE p.id = ?
+                ");
+                $stmt->execute([$_POST['pinjaman_id']]);
+                $pinjaman = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if (!$pinjaman) {
+                    throw new Exception('Pinjaman tidak ditemukan');
+                }
+                
+                $principal = $pinjaman['jumlah'];
                 $tenor = $pinjaman['tenor'];
+                $productName = $pinjaman['nama_produk'] ?? 'Pinjaman Tunai';
                 
-                if ($pinjaman['bunga_per'] == 'tahun') {
-                    $bunga = ($pokok * $bunga_persen / 100) * ($tenor / 12);
+                // Hitung total yang harus dibayar (pokok + bunga)
+                $totalHarusDibayar = $principal;
+                if (stripos($productName, 'flexi') !== false) {
+                    // Pinjaman Flexi: 5% per bulan
+                    $bunga = $principal * 0.05 * $tenor;
                 } else {
-                    $bunga = ($pokok * $bunga_persen / 100) * $tenor;
+                    // Pinjaman Tunai/Beli HP: 12% per tahun
+                    $bunga = $principal * 0.12 * ($tenor / 12);
+                }
+                $totalHarusDibayar = $principal + $bunga;
+                
+                // Cek jika lunas
+                if($totalCicilan >= $totalHarusDibayar) {
+                    $stmt = $pdo->prepare("UPDATE pinjaman SET status = 'lunas' WHERE id = ?");
+                    $stmt->execute([$_POST['pinjaman_id']]);
                 }
                 
-                $total_harus_bayar = $pokok + $bunga;
-                
-                // Update status jika sudah lunas
-                if ($total_cicilan >= $total_harus_bayar) {
-                    $sql = "UPDATE pinjaman SET status = 'lunas' WHERE id = ?";
-                    $stmt = $conn->prepare($sql);
-                    $stmt->bind_param("i", $pinjaman_id);
-                    $stmt->execute();
-                }
-                
-                $conn->commit();
-                echo json_encode(['success' => true, 'id' => $conn->insert_id]);
-            } else {
-                $conn->rollback();
-                echo json_encode(['success' => false, 'message' => 'Failed to add cicilan']);
+                $pdo->commit();
+                echo json_encode(['success' => true, 'message' => 'Cicilan berhasil dicatat']);
+            } catch(Exception $e) {
+                $pdo->rollBack();
+                echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
             }
-        } catch (Exception $e) {
-            $conn->rollback();
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        break;
+        
+    case 'GET':
+        if($_GET['action'] == 'list') {
+            $stmt = $pdo->prepare("
+                SELECT c.*, p.jumlah as jumlah_pinjaman, u.nama as nama_anggota
+                FROM cicilan c
+                JOIN pinjaman p ON c.pinjaman_id = p.id
+                JOIN users u ON p.user_id = u.id
+                WHERE c.pinjaman_id = ?
+                ORDER BY c.tanggal DESC
+            ");
+            $stmt->execute([$_GET['pinjaman_id']]);
+            echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+        } elseif($_GET['action'] == 'history') {
+            if(isset($_GET['user_id'])) {
+                // History untuk anggota tertentu
+                $stmt = $pdo->prepare("
+                    SELECT c.*, p.jumlah as jumlah_pinjaman, u.nama as nama_anggota, pk.nama_produk
+                    FROM cicilan c
+                    JOIN pinjaman p ON c.pinjaman_id = p.id
+                    JOIN users u ON p.user_id = u.id
+                    LEFT JOIN produk_koperasi pk ON p.produk_id = pk.id
+                    WHERE p.user_id = ?
+                    ORDER BY c.tanggal DESC
+                ");
+                $stmt->execute([$_GET['user_id']]);
+            } else {
+                // History semua cicilan untuk admin
+                $stmt = $pdo->prepare("
+                    SELECT c.*, p.jumlah as jumlah_pinjaman, u.nama as nama_anggota, pk.nama_produk
+                    FROM cicilan c
+                    JOIN pinjaman p ON c.pinjaman_id = p.id
+                    JOIN users u ON p.user_id = u.id
+                    LEFT JOIN produk_koperasi pk ON p.produk_id = pk.id
+                    ORDER BY c.tanggal DESC
+                ");
+                $stmt->execute();
+            }
+            echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+        }
+        break;
+        
+    case 'PUT':
+        $data = json_decode(file_get_contents('php://input'), true);
+        if($data['action'] == 'edit') {
+            try {
+                $stmt = $pdo->prepare("UPDATE cicilan SET jumlah = ?, tanggal = ? WHERE id = ?");
+                $result = $stmt->execute([$data['jumlah'], $data['tanggal'], $data['id']]);
+                echo json_encode(['success' => $result, 'message' => $result ? 'Cicilan berhasil diupdate' : 'Gagal mengupdate cicilan']);
+            } catch(Exception $e) {
+                echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+            }
+        }
+        break;
+        
+    case 'DELETE':
+        $data = json_decode(file_get_contents('php://input'), true);
+        try {
+            $stmt = $pdo->prepare("DELETE FROM cicilan WHERE id = ?");
+            $result = $stmt->execute([$data['id']]);
+            echo json_encode(['success' => $result, 'message' => $result ? 'Cicilan berhasil dihapus' : 'Gagal menghapus cicilan']);
+        } catch(Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
         break;
 }

@@ -1,5 +1,17 @@
 <?php
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    exit(0);
+}
+
 require_once 'config.php';
+
+// Bersihkan output buffer
+ob_clean();
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -44,6 +56,46 @@ switch($method) {
                 } else {
                     echo json_encode(['success' => false, 'message' => 'Failed to add user']);
                 }
+            }
+        }
+        break;
+        
+    case 'PUT':
+        $data = json_decode(file_get_contents('php://input'), true);
+        if($data && isset($data['action']) && $data['action'] == 'edit') {
+            try {
+                $stmt = $pdo->prepare("UPDATE users SET username = ?, nama = ? WHERE id = ?");
+                $result = $stmt->execute([
+                    trim($data['username']),
+                    trim($data['nama']),
+                    $data['id']
+                ]);
+                
+                if($result) {
+                    echo json_encode(['success' => true, 'message' => 'User berhasil diupdate']);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Gagal mengupdate user']);
+                }
+            } catch(Exception $e) {
+                echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+            }
+        }
+        break;
+        
+    case 'DELETE':
+        $data = json_decode(file_get_contents('php://input'), true);
+        if($data && isset($data['action']) && $data['action'] == 'delete') {
+            try {
+                $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
+                $result = $stmt->execute([$data['id']]);
+                
+                if($result) {
+                    echo json_encode(['success' => true, 'message' => 'User berhasil dihapus']);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Gagal menghapus user']);
+                }
+            } catch(Exception $e) {
+                echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
             }
         }
         break;

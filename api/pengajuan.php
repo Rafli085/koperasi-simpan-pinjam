@@ -68,6 +68,15 @@ switch($method) {
                         exit;
                     }
                     
+                    // Cek apakah sudah diproses sebelumnya
+                    $checkStmt = $pdo->prepare("SELECT id FROM pinjaman WHERE pengajuan_id = ?");
+                    $checkStmt->execute([$pengajuan['id']]);
+                    if ($checkStmt->fetch()) {
+                        $pdo->rollBack();
+                        echo json_encode(['success' => false, 'message' => 'Pengajuan sudah diproses']);
+                        exit;
+                    }
+
                     $stmt = $pdo->prepare("
                         INSERT INTO pinjaman (pengajuan_id, user_id, produk_id, jumlah, tenor, status, tanggal) 
                         VALUES (?, ?, ?, ?, ?, 'aktif', NOW())
@@ -81,8 +90,8 @@ switch($method) {
                         $pengajuan['tenor']
                     ]);
                     
-                    $stmt = $pdo->prepare("UPDATE pengajuan_pinjaman SET status = 'diproses' WHERE id = ?");
-                    $stmt->execute([$_POST['pengajuan_id']]);
+                    // Tidak update status pengajuan ke 'ok' karena tidak ada di enum
+                    // Filter di list_baru akan menangani agar tidak muncul lagi
                     
                     $pdo->commit();
                     echo json_encode(['success' => true, 'message' => 'Berhasil diproses ke pinjaman']);
@@ -119,7 +128,9 @@ switch($method) {
                     FROM pengajuan_pinjaman p
                     LEFT JOIN produk_koperasi pk ON p.produk_id = pk.id
                     LEFT JOIN users u ON p.user_id = u.id
+                    LEFT JOIN pinjaman pinj ON p.id = pinj.pengajuan_id
                     WHERE p.status IN ('pending', 'disetujui')
+                    AND pinj.id IS NULL
                     ORDER BY p.tanggal_pengajuan DESC
                 ");
             } else {

@@ -1,5 +1,17 @@
 <?php
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    exit(0);
+}
+
 require_once 'config.php';
+
+// Bersihkan output buffer
+ob_clean();
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -12,10 +24,11 @@ switch ($method) {
         if (isset($_GET['user_id'])) {
             // Get pinjaman by user with cicilan
             $stmt = $pdo->prepare("
-                SELECT p.*, u.nama,
+                SELECT p.*, u.nama, pk.nama_produk,
                        COALESCE(SUM(c.jumlah), 0) AS total_cicilan
                 FROM pinjaman p
                 JOIN users u ON p.user_id = u.id
+                LEFT JOIN produk_koperasi pk ON p.produk_id = pk.id
                 LEFT JOIN cicilan c ON p.id = c.pinjaman_id
                 WHERE p.user_id = ?
                 GROUP BY p.id
@@ -25,10 +38,11 @@ switch ($method) {
         } else {
             // Get all pinjaman (admin)
             $stmt = $pdo->query("
-                SELECT p.*, u.nama,
+                SELECT p.*, u.nama, pk.nama_produk,
                        COALESCE(SUM(c.jumlah), 0) AS total_cicilan
                 FROM pinjaman p
                 JOIN users u ON p.user_id = u.id
+                LEFT JOIN produk_koperasi pk ON p.produk_id = pk.id
                 LEFT JOIN cicilan c ON p.id = c.pinjaman_id
                 GROUP BY p.id
                 ORDER BY p.tanggal DESC
@@ -119,12 +133,42 @@ switch ($method) {
     // DELETE PINJAMAN
     // =====================
     case 'DELETE':
-        $data = json_decode(file_get_contents('php://input'), true);
-        
-        $stmt = $pdo->prepare("DELETE FROM pinjaman WHERE id = ?");
-        $result = $stmt->execute([$data['id']]);
-        
-        echo json_encode(['success' => $result]);
+        try {
+            $input = file_get_contents('php://input');
+            $data = json_decode($input, true);
+            
+            if (!$data || !isset($data['id'])) {
+                echo json_encode(['success' => false, 'message' => 'ID pinjaman tidak valid']);
+                exit;
+            }
+            
+            $pdo->beginTransaction();
+            
+            // Delete cicilan first (foreign key constraint)
+            $stmt = $pdo->prepare("DELETE FROM cicilan WHERE pinjaman_id = ?");
+            $stmt->execute([$data['id']]);
+            
+            // Then delete pinjaman
+            $stmt = $pdo->prepare("DELETE FROM pinjaman WHERE id = ?");
+            $result = $stmt->execute([$data['id']]);
+            
+            if ($result) {
+                $pdo->commit();
+                echo json_encode([
+                    'success' => true, 
+                    'message' => 'Pinjaman berhasil dihapus'
+                ]);
+            } else {
+                $pdo->rollBack();
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Gagal menghapus pinjaman'
+                ]);
+            }
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
         break;
 }
 ?>

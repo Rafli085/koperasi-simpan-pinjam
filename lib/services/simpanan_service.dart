@@ -77,4 +77,28 @@ class SimpananService {
       return false;
     }
   }
+
+  // Tambah simpanan dengan jenis
+  static Future<bool> tambahSimpanan(int userId, String jenis, double jumlah) async {
+    try {
+      final url = await ApiService.baseUrl;
+      final response = await http.post(
+        Uri.parse('$url/simpanan.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'user_id': userId,
+          'jenis': jenis,
+          'jumlah': jumlah,
+        }),
+      );
+      
+      if (response.statusCode == 200) {
+        final result = json.decode(response.body);
+        return result['success'] == true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
 }

@@ -3,6 +3,8 @@ import '../data/dummy_users.dart';
 import '../services/simpanan_service.dart';
 import '../utils/format.dart';
 import 'tambah_simpanan_page.dart';
+import 'edit_simpanan_page.dart';
+import 'history_simpanan_page.dart';
 
 class SimpananAdminPage extends StatefulWidget {
   const SimpananAdminPage({super.key});
@@ -50,6 +52,11 @@ class _SimpananAdminPageState extends State<SimpananAdminPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
+                      icon: const Icon(Icons.history, color: Colors.orange),
+                      onPressed: () => _lihatHistory(user),
+                      tooltip: 'Lihat History',
+                    ),
+                    IconButton(
                       icon: const Icon(Icons.edit, color: Colors.blue),
                       onPressed: () => _editSimpanan(user),
                       tooltip: 'Edit Simpanan',
@@ -69,21 +76,38 @@ class _SimpananAdminPageState extends State<SimpananAdminPage> {
     );
   }
 
-  void _editSimpanan(user) {
-    // Navigate to edit page or show dialog
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Edit Simpanan ${user.nama}'),
-        content: const Text('Fitur edit simpanan akan segera tersedia'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
+  void _lihatHistory(user) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => HistorySimpananPage(
+          user: {
+            'id': user.id,
+            'nama': user.nama,
+            'nomorAnggota': user.nomorAnggota,
+          },
+        ),
       ),
     );
+  }
+
+  void _editSimpanan(user) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditSimpananPage(
+          user: {
+            'id': user.id,
+            'nama': user.nama,
+            'nomorAnggota': user.nomorAnggota,
+          },
+        ),
+      ),
+    ).then((result) {
+      if (result == true) {
+        setState(() {}); // Refresh UI
+      }
+    });
   }
 
   void _hapusSimpanan(user) {

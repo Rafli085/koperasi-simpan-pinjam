@@ -7,9 +7,10 @@ import '../services/riwayat_pinjaman_service.dart';
 import '../utils/format.dart';
 
 class FormPengajuanPinjamanPage extends StatefulWidget {
-  final String username;
+  final Map<String, dynamic>? user;
+  final String? username; // Optional untuk backward compatibility
 
-  const FormPengajuanPinjamanPage({super.key, required this.username});
+  const FormPengajuanPinjamanPage({super.key, this.user, this.username});
 
   @override
   State<FormPengajuanPinjamanPage> createState() =>
@@ -46,12 +47,11 @@ class _FormPengajuanPinjamanPageState extends State<FormPengajuanPinjamanPage> {
   }
 
   void _loadUserData() {
-    final user = DummyUsers.getUserByUsername(widget.username);
-    if (user != null) {
-      _namaController.text = user.nama;
-      _nomorAnggotaController.text = user.nomorAnggota;
+    if (widget.user != null) {
+      _namaController.text = widget.user!['nama'] ?? '';
+      _nomorAnggotaController.text = widget.user!['nomorAnggota'] ?? '';
       // Simulasi lama anggota berdasarkan user
-      _lamaAnggota = user.username == 'anggota1' ? 5 : 2;
+      _lamaAnggota = widget.user!['username'] == 'anggota1' ? 5 : 2;
       _lamaAnggotaController.text = _lamaAnggota.toString();
     }
   }
@@ -78,7 +78,8 @@ class _FormPengajuanPinjamanPageState extends State<FormPengajuanPinjamanPage> {
 
   double _hitungMaksimalTunai() {
     if (_tujuanPinjaman == 'pembelian_barang') {
-      return _maksimalPinjaman - _hargaBarang;
+      // Untuk pembelian barang, maksimal pinjaman = limit maksimal (bukan dikurangi harga barang)
+      return _maksimalPinjaman;
     }
     return _maksimalPinjaman;
   }
@@ -122,48 +123,64 @@ class _FormPengajuanPinjamanPageState extends State<FormPengajuanPinjamanPage> {
 
   void _submitPengajuan() async {
     if (!_formKey.currentState!.validate()) return;
+    if (widget.user == null) return;
 
     setState(() => _isLoading = true);
 
-    final user = DummyUsers.getUserByUsername(widget.username);
-    if (user != null) {
-      // Submit ke database via API
-      final result = await ApiService.ajukanPinjaman(
-        userId: user.id!,
-        produkId: 1, // Default produk ID
-        jumlah: double.parse(_jumlahPinjamanController.text),
-        tenor: int.parse(_tenorController.text),
-        keperluan: _produkPinjaman == 'Pinjaman Flexi' ? 'Pinjaman Flexi' : 
-                  (_tujuanPinjaman == 'tunai' ? 'Pinjaman tunai' : 'Pembelian ${_namaBarangController.text}'),
-        merkHp: _tujuanPinjaman == 'pembelian_barang' ? _namaBarangController.text : null,
-        modelHp: _tujuanPinjaman == 'pembelian_barang' ? _namaBarangController.text : null,
-        hargaHp: _tujuanPinjaman == 'pembelian_barang' ? _hargaBarang : null,
-      );
+    // Mapping produk_id berdasarkan jenis produk
+    int produkId;
+    switch (_produkPinjaman) {
+      case 'Pinjaman Tunai':
+        produkId = 1;
+        break;
+      case 'Pinjaman Flexi':
+        produkId = 2;
+        break;
+      case 'Beli HP':
+        produkId = 3;
+        break;
+      default:
+        produkId = 1;
+    }
 
-      setState(() => _isLoading = false);
+    // Submit ke database via API
+    final result = await ApiService.ajukanPinjaman(
+      userId: int.parse(widget.user!['id'].toString()),
+      produkId: produkId,
+      jumlah: double.parse(_jumlahPinjamanController.text),
+      tenor: int.parse(_tenorController.text),
+      keperluan: _produkPinjaman == 'Beli HP' ? 'Pembelian HP ${_namaBarangController.text}' :
+                (_produkPinjaman == 'Pinjaman Flexi' ? 'Pinjaman Flexi' : 
+                (_tujuanPinjaman == 'tunai' ? 'Pinjaman tunai' : 'Pembelian ${_namaBarangController.text}')),
+      merkHp: _produkPinjaman == 'Beli HP' ? _namaBarangController.text : 
+             (_tujuanPinjaman == 'pembelian_barang' ? _namaBarangController.text : null),
+      modelHp: _produkPinjaman == 'Beli HP' ? _namaBarangController.text : 
+              (_tujuanPinjaman == 'pembelian_barang' ? _namaBarangController.text : null),
+      hargaHp: _produkPinjaman == 'Beli HP' ? _hargaBarang : 
+              (_tujuanPinjaman == 'pembelian_barang' ? _hargaBarang : null),
+    );
 
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(result['success'] ? 'Pengajuan Berhasil' : 'Pengajuan Gagal'),
-            content: Text(result['message']),
-            actions: [
-              TextButton(
-                onPressed: () {
+    setState(() => _isLoading = false);
+
+    if (mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(result['success'] ? 'Pengajuan Berhasil' : 'Pengajuan Gagal'),
+          content: Text(result['message']),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                if (result['success']) {
                   Navigator.pop(context);
-                  if (result['success']) {
-                    Navigator.pop(context);
-                  }
-                },
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
-      }
-    } else {
-      setState(() => _isLoading = false);
+                }
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
     }
   }
 
@@ -347,95 +364,141 @@ class _FormPengajuanPinjamanPageState extends State<FormPengajuanPinjamanPage> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Tujuan Pinjaman
-                    const Text('Tujuan Pinjaman:'),
-                    RadioListTile<String>(
-                      title: const Text('Tunai'),
-                      value: 'tunai',
-                      groupValue: _tujuanPinjaman,
-                      onChanged: (value) {
-                        setState(() {
-                          _tujuanPinjaman = value;
-                          _hargaBarang = 0;
-                          _hargaBarangController.clear();
-                          _namaBarangController.clear();
-                        });
-                      },
-                    ),
-                    RadioListTile<String>(
-                      title: const Text('Pembelian Barang'),
-                      value: 'pembelian_barang',
-                      groupValue: _tujuanPinjaman,
-                      onChanged: (value) {
-                        setState(() => _tujuanPinjaman = value);
-                      },
-                    ),
-
-                    // Detail Barang (jika pembelian barang)
-                    if (_tujuanPinjaman == 'pembelian_barang') ...[
-                      const SizedBox(height: 16),
+                    // Khusus untuk Beli HP
+                    if (_produkPinjaman == 'Beli HP') ...[
                       TextFormField(
                         controller: _namaBarangController,
                         decoration: const InputDecoration(
-                          labelText: 'Nama Barang',
+                          labelText: 'Merk HP',
                           border: OutlineInputBorder(),
                         ),
-                        validator: (value) {
-                          if (_tujuanPinjaman == 'pembelian_barang' &&
-                              (value == null || value.isEmpty)) {
-                            return 'Masukkan nama barang';
-                          }
-                          return null;
-                        },
+                        validator: (value) => value?.isEmpty ?? true ? 'Masukkan merk HP' : null,
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _hargaBarangController,
                         decoration: const InputDecoration(
-                          labelText: 'Harga Barang',
+                          labelText: 'Harga HP',
                           border: OutlineInputBorder(),
                           prefixText: 'Rp ',
                         ),
                         keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                         onChanged: (value) {
                           setState(() {
                             _hargaBarang = double.tryParse(value) ?? 0;
                           });
                         },
                         validator: (value) {
-                          if (_tujuanPinjaman == 'pembelian_barang') {
-                            if (value == null || value.isEmpty) {
-                              return 'Masukkan harga barang';
-                            }
-                            final harga = double.tryParse(value);
-                            if (harga == null || harga <= 0) {
-                              return 'Harga barang tidak valid';
-                            }
-                            if (harga >= _maksimalPinjaman) {
-                              return 'Harga barang melebihi limit pinjaman';
-                            }
+                          if (value == null || value.isEmpty) {
+                            return 'Masukkan harga HP';
+                          }
+                          final harga = double.tryParse(value);
+                          if (harga == null || harga <= 0) {
+                            return 'Harga HP tidak valid';
+                          }
+                          if (harga > _maksimalPinjaman) {
+                            return 'Harga HP melebihi limit pinjaman';
                           }
                           return null;
                         },
                       ),
-
-                      // Info sisa limit
                       if (_hargaBarang > 0)
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
-                            'Sisa limit untuk tunai: ${Format.currency(_hitungMaksimalTunai())}',
+                            'Harga HP: ${Format.currency(_hargaBarang)}\nMaksimal pinjaman: ${Format.currency(_maksimalPinjaman)}',
                             style: TextStyle(
-                              color: _hitungMaksimalTunai() > 0
-                                  ? Colors.green
-                                  : Colors.red,
+                              color: Colors.blue,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
+                    ] else ...[
+                      // Untuk Pinjaman Tunai dan Flexi
+                      const Text('Tujuan Pinjaman:'),
+                      RadioListTile<String>(
+                        title: const Text('Tunai'),
+                        value: 'tunai',
+                        groupValue: _tujuanPinjaman,
+                        onChanged: (value) {
+                          setState(() {
+                            _tujuanPinjaman = value;
+                            _hargaBarang = 0;
+                            _hargaBarangController.clear();
+                            _namaBarangController.clear();
+                          });
+                        },
+                      ),
+                      RadioListTile<String>(
+                        title: const Text('Pembelian Barang'),
+                        value: 'pembelian_barang',
+                        groupValue: _tujuanPinjaman,
+                        onChanged: (value) {
+                          setState(() => _tujuanPinjaman = value);
+                        },
+                      ),
+
+                      // Detail Barang (jika pembelian barang)
+                      if (_tujuanPinjaman == 'pembelian_barang') ...[
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _namaBarangController,
+                          decoration: const InputDecoration(
+                            labelText: 'Nama Barang',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (value) {
+                            if (_tujuanPinjaman == 'pembelian_barang' &&
+                                (value == null || value.isEmpty)) {
+                              return 'Masukkan nama barang';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _hargaBarangController,
+                          decoration: const InputDecoration(
+                            labelText: 'Harga Barang',
+                            border: OutlineInputBorder(),
+                            prefixText: 'Rp ',
+                          ),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          onChanged: (value) {
+                            setState(() {
+                              _hargaBarang = double.tryParse(value) ?? 0;
+                            });
+                          },
+                          validator: (value) {
+                            if (_tujuanPinjaman == 'pembelian_barang') {
+                              if (value == null || value.isEmpty) {
+                                return 'Masukkan harga barang';
+                              }
+                              final harga = double.tryParse(value);
+                              if (harga == null || harga <= 0) {
+                                return 'Harga barang tidak valid';
+                              }
+                              if (harga >= _maksimalPinjaman) {
+                                return 'Harga barang melebihi limit pinjaman';
+                              }
+                            }
+                            return null;
+                          },
+                        ),
+                        if (_hargaBarang > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              'Harga barang: ${Format.currency(_hargaBarang)}\nMaksimal pinjaman: ${Format.currency(_maksimalPinjaman)}',
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
                     ],
 
                     const SizedBox(height: 16),
@@ -503,10 +566,8 @@ class _FormPengajuanPinjamanPageState extends State<FormPengajuanPinjamanPage> {
   }
 
   Future<List<Map<String, dynamic>>> _loadPinjamanLain() async {
-    final user = DummyUsers.getUserByUsername(widget.username);
-    if (user == null) return [];
-    
+    if (widget.user == null) return [];
     final allPinjaman = await RiwayatPinjamanService.getAllRiwayat();
-    return allPinjaman.where((p) => p['user_id'] != user.id && p['status'] == 'aktif').toList();
+    return allPinjaman.where((p) => p['user_id'] != widget.user!['id'] && p['status'] == 'aktif').toList();
   }
 }

@@ -6,6 +6,7 @@ import 'approval_pinjaman_page.dart';
 import 'dashboard_statistik_page.dart';
 import 'event_admin_page.dart';
 import 'notifikasi_pengajuan_page.dart';
+import 'history_cicilan_page.dart';
 import '../services/api_service.dart';
 import '../services/notifikasi_service.dart';
 import '../data/dummy_users.dart';
@@ -49,7 +50,7 @@ class _DashboardAdminState extends State<DashboardAdmin> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Dashboard Admin (${widget.role})'),
+        title: Text('Menu (${widget.role})'),
         actions: [
           // Notifikasi pengajuan baru
           Stack(
@@ -60,7 +61,8 @@ class _DashboardAdminState extends State<DashboardAdmin> {
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => NotifikasiPengajuanPage(username: widget.username),
+                      builder: (_) =>
+                          NotifikasiPengajuanPage(username: widget.username),
                     ),
                   );
                   _loadPengajuanBaru(); // Refresh setelah kembali
@@ -82,10 +84,7 @@ class _DashboardAdminState extends State<DashboardAdmin> {
                     ),
                     child: Text(
                       '$_pengajuanBaruCount',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                      ),
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -101,27 +100,6 @@ class _DashboardAdminState extends State<DashboardAdmin> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // ===== STATISTIK =====
-          Card(
-            color: Colors.blue[50],
-            child: ListTile(
-              leading: const Icon(Icons.dashboard, color: Colors.blue),
-              title: const Text('Dashboard Statistik'),
-              subtitle: const Text('Ringkasan kondisi koperasi'),
-              trailing: const Icon(Icons.arrow_forward_ios),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const DashboardStatistikPage(),
-                  ),
-                );
-              },
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
           // ===== NOTIFIKASI PENGAJUAN =====
           Card(
             color: _pengajuanBaruCount > 0 ? Colors.red[50] : Colors.grey[50],
@@ -161,7 +139,9 @@ class _DashboardAdminState extends State<DashboardAdmin> {
               title: Text(
                 'Pengajuan Pinjaman',
                 style: TextStyle(
-                  fontWeight: _pengajuanBaruCount > 0 ? FontWeight.bold : FontWeight.normal,
+                  fontWeight: _pengajuanBaruCount > 0
+                      ? FontWeight.bold
+                      : FontWeight.normal,
                 ),
               ),
               subtitle: Text(
@@ -174,7 +154,8 @@ class _DashboardAdminState extends State<DashboardAdmin> {
                 await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => NotifikasiPengajuanPage(username: widget.username),
+                    builder: (_) =>
+                        NotifikasiPengajuanPage(username: widget.username),
                   ),
                 );
                 _loadPengajuanBaru();
@@ -193,9 +174,7 @@ class _DashboardAdminState extends State<DashboardAdmin> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const SimpananAdminPage(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const SimpananAdminPage()),
                 );
               },
             ),
@@ -208,13 +187,12 @@ class _DashboardAdminState extends State<DashboardAdmin> {
             child: ListTile(
               leading: const Icon(Icons.credit_card),
               title: const Text('Data Pinjaman'),
+              subtitle: const Text('Kelola pinjaman dan cicilan anggota'),
               trailing: const Icon(Icons.arrow_forward_ios),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const PinjamanAdminPage(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const PinjamanAdminPage()),
                 );
               },
             ),
@@ -222,26 +200,29 @@ class _DashboardAdminState extends State<DashboardAdmin> {
 
           const SizedBox(height: 12),
 
-          if (widget.role == 'ketua') ...[
-            Card(
-              color: Colors.orange[50],
-              child: ListTile(
-                leading:
-                    const Icon(Icons.verified, color: Colors.orange),
-                title: const Text('Approval Pinjaman'),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ApprovalPinjamanPage(),
+          // ===== HISTORY CICILAN =====
+          Card(
+            color: Colors.orange[50],
+            child: ListTile(
+              leading: const Icon(Icons.history, color: Colors.orange),
+              title: const Text('History Cicilan'),
+              subtitle: const Text('Riwayat pembayaran cicilan semua anggota'),
+              trailing: const Icon(Icons.arrow_forward_ios),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => HistoryCicilanPage(
+                      userId: null,
+                      title: 'History Cicilan Semua Anggota',
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              },
             ),
-            const SizedBox(height: 12),
-          ],
+          ),
+
+          const SizedBox(height: 12),
 
           // ===== ANGGOTA =====
           Card(
@@ -252,9 +233,7 @@ class _DashboardAdminState extends State<DashboardAdmin> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const KelolaAnggotaPage(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const KelolaAnggotaPage()),
                 );
               },
             ),
@@ -273,9 +252,7 @@ class _DashboardAdminState extends State<DashboardAdmin> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const EventAdminPage(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const EventAdminPage()),
                 );
               },
             ),

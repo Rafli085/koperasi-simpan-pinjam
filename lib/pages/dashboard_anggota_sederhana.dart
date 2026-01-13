@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'simpanan_anggota_page.dart';
 import 'pinjaman_anggota_page.dart';
 import 'event_anggota_page.dart';
+import 'history_cicilan_page.dart';
 
 class DashboardAnggotaSederhana extends StatelessWidget {
   final String username;
@@ -59,8 +60,28 @@ class DashboardAnggotaSederhana extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) =>
-                          PinjamanAnggotaPage(username: username),
+                      builder: (_) => const PinjamanAnggotaPage(),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              color: Colors.green[50],
+              child: ListTile(
+                leading: const Icon(Icons.payment, color: Colors.green),
+                title: const Text('History Cicilan'),
+                subtitle: const Text('Riwayat pembayaran cicilan'),
+                trailing: const Icon(Icons.arrow_forward_ios),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => HistoryCicilanPage(
+                        userId: userId,
+                        title: 'History Cicilan Saya',
+                      ),
                     ),
                   );
                 },

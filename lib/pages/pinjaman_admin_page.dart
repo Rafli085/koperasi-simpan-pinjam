@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../services/riwayat_pinjaman_service.dart';
 import '../services/api_service.dart';
 import '../utils/format.dart';
+import '../utils/loan_calculator.dart';
+import 'history_cicilan_page.dart';
 
 class PinjamanAdminPage extends StatefulWidget {
   const PinjamanAdminPage({super.key});
@@ -29,6 +31,90 @@ class _PinjamanAdminPageState extends State<PinjamanAdminPage> {
     });
   }
 
+  void _bayarCicilan(Map<String, dynamic> pinjaman) {
+    final cicilanController = TextEditingController();
+    final jumlahPinjaman = double.tryParse(pinjaman['jumlah'].toString()) ?? 0;
+    DateTime selectedDate = DateTime.now();
+    
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text('Bayar Cicilan'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Anggota: ${pinjaman['nama']}'),
+              Text('Jumlah Pinjaman: ${Format.currency(jumlahPinjaman)}'),
+              const SizedBox(height: 16),
+              TextField(
+                controller: cicilanController,
+                decoration: const InputDecoration(
+                  labelText: 'Jumlah Bayar',
+                  prefixText: 'Rp ',
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Text('Tanggal: '),
+                  TextButton(
+                    onPressed: () async {
+                      final date = await showDatePicker(
+                        context: context,
+                        initialDate: selectedDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now(),
+                      );
+                      if (date != null) {
+                        setState(() => selectedDate = date);
+                      }
+                    },
+                    child: Text('${selectedDate.day}/${selectedDate.month}/${selectedDate.year}'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (cicilanController.text.isEmpty) return;
+                
+                Navigator.pop(context);
+                
+                final jumlahCicilan = int.tryParse(cicilanController.text) ?? 0;
+                final result = await ApiService.bayarCicilanWithDate(
+                  pinjaman['id'], 
+                  jumlahCicilan,
+                  selectedDate,
+                );
+                
+                if (result['success']) {
+                  _loadPinjaman();
+                }
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(result['message']),
+                    backgroundColor: result['success'] ? Colors.green : Colors.red,
+                  ),
+                );
+              },
+              child: const Text('Bayar'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _editPinjaman(Map<String, dynamic> pinjaman) {
     final jumlahController = TextEditingController(
       text: pinjaman['jumlah'].toString(),
@@ -36,6 +122,7 @@ class _PinjamanAdminPageState extends State<PinjamanAdminPage> {
     final tenorController = TextEditingController(
       text: pinjaman['tenor'].toString(),
     );
+    final cicilanController = TextEditingController();
     
     showDialog(
       context: context,
@@ -60,6 +147,16 @@ class _PinjamanAdminPageState extends State<PinjamanAdminPage> {
               ),
               keyboardType: TextInputType.number,
             ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: cicilanController,
+              decoration: const InputDecoration(
+                labelText: 'Bayar Cicilan (opsional)',
+                prefixText: 'Rp ',
+                hintText: 'Kosongkan jika tidak ada cicilan',
+              ),
+              keyboardType: TextInputType.number,
+            ),
           ],
         ),
         actions: [
@@ -71,20 +168,29 @@ class _PinjamanAdminPageState extends State<PinjamanAdminPage> {
             onPressed: () async {
               Navigator.pop(context);
               
-              final result = await ApiService.editPinjaman(
+              // Update pinjaman
+              final editResult = await ApiService.editPinjaman(
                 pinjaman['id'],
                 double.tryParse(jumlahController.text) ?? 0,
                 int.tryParse(tenorController.text) ?? 0,
               );
               
-              if (result['success']) {
+              // Bayar cicilan jika ada
+              if (cicilanController.text.isNotEmpty) {
+                final jumlahCicilan = int.tryParse(cicilanController.text) ?? 0;
+                if (jumlahCicilan > 0) {
+                  await ApiService.bayarCicilan(pinjaman['id'], jumlahCicilan);
+                }
+              }
+              
+              if (editResult['success']) {
                 _loadPinjaman();
               }
               
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(result['message']),
-                  backgroundColor: result['success'] ? Colors.green : Colors.red,
+                  content: Text(editResult['message']),
+                  backgroundColor: editResult['success'] ? Colors.green : Colors.red,
                 ),
               );
             },
@@ -145,45 +251,108 @@ class _PinjamanAdminPageState extends State<PinjamanAdminPage> {
                   itemCount: _pinjamanList.length,
                   itemBuilder: (context, index) {
                     final p = _pinjamanList[index];
-                    final jumlah = double.tryParse(p['jumlah'].toString()) ?? 0;
+                    final principal = double.tryParse(p['jumlah'].toString()) ?? 0;
+                    final tenor = int.tryParse(p['tenor'].toString()) ?? 0;
+                    final productName = p['nama_produk'] ?? 'Pinjaman Tunai';
                     final totalCicilan = double.tryParse(p['total_cicilan'].toString()) ?? 0;
-                    final sisa = jumlah - totalCicilan;
+                    
+                    // Calculate loan details with interest
+                    final loanDetails = LoanCalculator.calculateLoanDetails(
+                      principal: principal,
+                      tenor: tenor,
+                      productType: productName,
+                    );
+                    
+                    final totalAmount = loanDetails['total']!;
+                    final sisa = totalAmount - totalCicilan;
 
                     return Card(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 4),
-                      child: ListTile(
-                        leading: const Icon(Icons.credit_card),
-                        title: Text(Format.currency(jumlah)),
-                        subtitle: Column(
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Nama: ${p['nama']}'),
-                            const SizedBox(height: 4),
-                            Text('Tanggal Pinjam: ${Format.tanggal(p['tanggal'])}'),
-                            const SizedBox(height: 4),
-                            Text('Tenor: ${p['tenor']} bulan'),
-                            const SizedBox(height: 4),
-                            Text('Status: ${p['status']} • Sisa: ${Format.currency(sisa)}'),
-                          ],
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Chip(
-                              label: Text(p['status']),
-                              backgroundColor: _statusColor(p['status']),
+                            // Header
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        p['nama'],
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      Text(
+                                        productName,
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Chip(
+                                  label: Text(
+                                    p['status'],
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                  backgroundColor: _statusColor(p['status']),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.blue),
-                              onPressed: () => _editPinjaman(p),
-                              tooltip: 'Edit Pinjaman',
+                            const SizedBox(height: 8),
+                            // Amount info
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('Total: ${Format.currency(totalAmount)}'),
+                                Text('Sisa: ${Format.currency(sisa)}'),
+                              ],
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _hapusPinjaman(p),
-                              tooltip: 'Hapus Pinjaman',
+                            const SizedBox(height: 8),
+                            // Action buttons
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _buildActionButton(
+                                  Icons.history,
+                                  'History',
+                                  Colors.orange,
+                                  () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => HistoryCicilanPage(
+                                        userId: null,
+                                        title: 'History Cicilan - ${p['nama']}',
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                _buildActionButton(
+                                  Icons.payment,
+                                  'Bayar',
+                                  Colors.green,
+                                  () => _bayarCicilan(p),
+                                ),
+                                _buildActionButton(
+                                  Icons.edit,
+                                  'Edit',
+                                  Colors.blue,
+                                  () => _editPinjaman(p),
+                                ),
+                                _buildActionButton(
+                                  Icons.delete,
+                                  'Hapus',
+                                  Colors.red,
+                                  () => _hapusPinjaman(p),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -191,6 +360,25 @@ class _PinjamanAdminPageState extends State<PinjamanAdminPage> {
                     );
                   },
                 ),
+    );
+  }
+
+  Widget _buildActionButton(IconData icon, String label, Color color, VoidCallback onPressed) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: Icon(icon, color: color, size: 20),
+          onPressed: onPressed,
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 

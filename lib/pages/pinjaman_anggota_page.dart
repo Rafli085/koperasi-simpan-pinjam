@@ -1,23 +1,25 @@
 import 'package:flutter/material.dart';
-import '../data/dummy_users.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/user_model.dart';
 import '../services/api_service.dart';
-import '../services/riwayat_pinjaman_service.dart';
 import '../utils/format.dart';
+import '../utils/loan_calculator.dart';
 import 'form_pengajuan_pinjaman_page.dart';
 
 class PinjamanAnggotaPage extends StatefulWidget {
-  final String username;
-
-  const PinjamanAnggotaPage({super.key, required this.username});
+  final String? username; // Optional untuk backward compatibility
+  
+  const PinjamanAnggotaPage({super.key, this.username});
 
   @override
   State<PinjamanAnggotaPage> createState() => _PinjamanAnggotaPageState();
 }
 
 class _PinjamanAnggotaPageState extends State<PinjamanAnggotaPage> {
+  User? user;
   List<dynamic> _pengajuanList = [];
   List<dynamic> _pinjamanList = [];
-  bool _isLoading = false;
+  bool _isLoading = true;
   int _selectedIndex = 0;
 
   @override
@@ -28,112 +30,160 @@ class _PinjamanAnggotaPageState extends State<PinjamanAnggotaPage> {
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-    final user = DummyUsers.getUserByUsername(widget.username);
-    if (user != null) {
-      // Load pengajuan dan pinjaman dari database via API
-      final pengajuanData = await ApiService.getPengajuan('anggota', user.id!);
-      final pinjamanData = await RiwayatPinjamanService.getRiwayatByUserId(user.id!);
-      
-      setState(() {
-        _pengajuanList = pengajuanData;
-        _pinjamanList = pinjamanData;
-        _isLoading = false;
-      });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('user_id');
+      print('Debug: userId from prefs = $userId');
+
+      if (userId != null) {
+        // Fetch users list to find current user
+        final users = await ApiService.getUsers();
+        print('Debug: users count = ${users.length}');
+        
+        final userData = users.firstWhere(
+          (u) => u['id'] == userId,
+          orElse: () => null,
+        );
+        print('Debug: userData = $userData');
+
+        if (userData != null) {
+          if (mounted) {
+            setState(() {
+              user = User.fromJson(userData);
+            });
+            print('Debug: user created = ${user?.nama}');
+          }
+
+          // Fetch pengajuan dan pinjaman
+          final pengajuanResult = await ApiService.getPengajuan('anggota', userId);
+          final pinjamanResult = await ApiService.getPinjaman(userId: userId);
+          
+          if (mounted) {
+            setState(() {
+              _pengajuanList = pengajuanResult;
+              if (pinjamanResult['success']) {
+                _pinjamanList = pinjamanResult['data'];
+              }
+            });
+          }
+        }
+      }
+    } catch (e) {
+      print('Error loading data: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal memuat data: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = DummyUsers.getUserByUsername(widget.username);
-
     return Scaffold(
       appBar: AppBar(title: const Text('Pinjaman Saya')),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => FormPengajuanPinjamanPage(
-                username: widget.username,
-              ),
-            ),
-          );
-          _loadData();
-        },
-        child: const Icon(Icons.add),
-        tooltip: 'Ajukan Pinjaman',
-      ),
-      body: user == null
-          ? const Center(child: Text('User tidak ditemukan'))
-          : _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : Column(
-                  children: [
-                    // Tab Bar
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => setState(() => _selectedIndex = 0),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                decoration: BoxDecoration(
-                                  border: Border(
-                                    bottom: BorderSide(
-                                      color: _selectedIndex == 0 ? Colors.blue : Colors.transparent,
-                                      width: 2,
-                                    ),
-                                  ),
-                                ),
-                                child: Text(
-                                  'Pengajuan (${_pengajuanList.length})',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontWeight: _selectedIndex == 0 ? FontWeight.bold : FontWeight.normal,
-                                    color: _selectedIndex == 0 ? Colors.blue : Colors.grey.shade600,
-                                  ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                // Tab Bar
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _selectedIndex = 0),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: _selectedIndex == 0 ? Colors.blue : Colors.transparent,
+                                  width: 2,
                                 ),
                               ),
                             ),
-                          ),
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => setState(() => _selectedIndex = 1),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                decoration: BoxDecoration(
-                                  border: Border(
-                                    bottom: BorderSide(
-                                      color: _selectedIndex == 1 ? Colors.blue : Colors.transparent,
-                                      width: 2,
-                                    ),
-                                  ),
-                                ),
-                                child: Text(
-                                  'Pinjaman Aktif (${_pinjamanList.length})',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontWeight: _selectedIndex == 1 ? FontWeight.bold : FontWeight.normal,
-                                    color: _selectedIndex == 1 ? Colors.blue : Colors.grey.shade600,
-                                  ),
-                                ),
+                            child: Text(
+                              'Pengajuan (${_pengajuanList.length})',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontWeight: _selectedIndex == 0 ? FontWeight.bold : FontWeight.normal,
+                                color: _selectedIndex == 0 ? Colors.blue : Colors.grey.shade600,
                               ),
                             ),
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                    // Content
-                    Expanded(
-                      child: _selectedIndex == 0 ? _buildPengajuanList() : _buildPinjamanList(),
-                    ),
-                  ],
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _selectedIndex = 1),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: _selectedIndex == 1 ? Colors.blue : Colors.transparent,
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                            child: Text(
+                              'Pinjaman Aktif (${_pinjamanList.length})',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontWeight: _selectedIndex == 1 ? FontWeight.bold : FontWeight.normal,
+                                color: _selectedIndex == 1 ? Colors.blue : Colors.grey.shade600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+                // Content
+                Expanded(
+                  child: _selectedIndex == 0 ? _buildPengajuanList() : _buildPinjamanList(),
+                ),
+              ],
+            ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          print('Debug: user = $user');
+          print('Debug: user?.id = ${user?.id}');
+          
+          if (user != null && user!.id != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => FormPengajuanPinjamanPage(
+                  user: {
+                    'id': user!.id,
+                    'nama': user!.nama,
+                    'username': user!.username,
+                    'nomorAnggota': user!.nomorAnggota ?? '',
+                  },
+                ),
+              ),
+            ).then((_) => _loadData());
+          } else {
+            print('Debug: User data tidak tersedia');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Data user belum siap. User: $user')),
+            );
+          }
+        },
+        label: const Text('Ajukan Pinjaman'),
+        icon: const Icon(Icons.add),
+      ),
     );
   }
 
@@ -141,22 +191,65 @@ class _PinjamanAnggotaPageState extends State<PinjamanAnggotaPage> {
     return _pengajuanList.isEmpty
         ? const Center(child: Text('Belum ada pengajuan'))
         : ListView.builder(
+            padding: const EdgeInsets.all(8),
             itemCount: _pengajuanList.length,
             itemBuilder: (context, index) {
               final p = _pengajuanList[index];
               return Card(
-                child: ListTile(
-                  title: Text('${p['nama_produk']} - ${Format.currency(double.tryParse(p['jumlah'].toString()) ?? 0)}'),
-                  subtitle: Column(
+                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Tenor: ${p['tenor']} bulan'),
-                      Text('Status: ${p['status']}'),
-                      Text('Tanggal: ${Format.tanggal(p['tanggal_pengajuan'])}'),
-                      Text('Keperluan: ${p['keperluan']}'),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${p['nama_produk']}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          _getStatusIcon(p['status']),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        Format.currency(double.tryParse(p['jumlah'].toString()) ?? 0),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.green,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Tenor: ${p['tenor']} bulan'),
+                                Text('Status: ${p['status']}'),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Tanggal: ${Format.tanggal(p['tanggal_pengajuan'])}'),
+                                Text('Keperluan: ${p['keperluan']}'),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
-                  trailing: _getStatusIcon(p['status']),
                 ),
               );
             },
@@ -167,23 +260,124 @@ class _PinjamanAnggotaPageState extends State<PinjamanAnggotaPage> {
     return _pinjamanList.isEmpty
         ? const Center(child: Text('Belum ada pinjaman aktif'))
         : ListView.builder(
+            padding: const EdgeInsets.all(8),
             itemCount: _pinjamanList.length,
             itemBuilder: (context, index) {
               final p = _pinjamanList[index];
+              final principal = double.tryParse(p['jumlah'].toString()) ?? 0;
+              final tenor = int.tryParse(p['tenor'].toString()) ?? 0;
+              final productName = p['nama_produk'] ?? 'Pinjaman Tunai';
+              
+              // Calculate loan details with interest
+              final loanDetails = LoanCalculator.calculateLoanDetails(
+                principal: principal,
+                tenor: tenor,
+                productType: productName,
+              );
+              
+              final totalAmount = loanDetails['total']!;
+              final interest = loanDetails['interest']!;
+              final monthlyPayment = loanDetails['monthlyPayment']!;
+              
               return Card(
-                child: ListTile(
-                  title: Text('Pinjaman - ${Format.currency(double.tryParse(p['jumlah'].toString()) ?? 0)}'),
+                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: ExpansionTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Colors.blue,
+                    child: Icon(Icons.credit_card, color: Colors.white),
+                  ),
+                  title: Text(
+                    productName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Tenor: ${p['tenor']} bulan'),
-                      Text('Status: ${p['status']}'),
-                      Text('Tanggal: ${Format.tanggal(p['tanggal'])}'),
-                      if (p['total_cicilan'] != null)
-                        Text('Total Cicilan: ${Format.currency(double.tryParse(p['total_cicilan'].toString()) ?? 0)}'),
+                      Text(
+                        'Total: ${Format.currency(totalAmount)}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red,
+                        ),
+                      ),
+                      Text('Status: ${p['status']} • ${p['tenor']} bulan'),
                     ],
                   ),
                   trailing: _getStatusIcon(p['status']),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Pinjaman Pokok:'),
+                              Text(
+                                Format.currency(principal),
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Bunga (${LoanCalculator.getInterestRateText(productName)}):'),
+                              Text(
+                                Format.currency(interest),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.orange,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Total Harus Dibayar:',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                Format.currency(totalAmount),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Cicilan per Bulan:'),
+                              Text(
+                                Format.currency(monthlyPayment),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Tanggal Pinjam: ${Format.tanggal(p['tanggal'])}',
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               );
             },
