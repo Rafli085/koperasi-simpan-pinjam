@@ -302,55 +302,6 @@ class _FormPengajuanPinjamanPageState extends State<FormPengajuanPinjamanPage> {
 
             const SizedBox(height: 16),
 
-            // Info Pinjaman Lain
-            FutureBuilder<List<Map<String, dynamic>>>(
-              future: _loadPinjamanLain(),
-              builder: (context, snapshot) {
-                if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                  return Card(
-                    color: Colors.orange.shade50,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.info, color: Colors.orange),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'Pinjaman Anggota Lain',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.orange,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          ...snapshot.data!.take(3).map((p) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: Text(
-                              '• ${p['nama']}: ${Format.currency(double.tryParse(p['jumlah'].toString()) ?? 0)}',
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                          )),
-                          if (snapshot.data!.length > 3)
-                            Text(
-                              'dan ${snapshot.data!.length - 3} pinjaman lainnya...',
-                              style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
-                            ),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-
-            const SizedBox(height: 16),
-
             // Detail Pengajuan
             Card(
               child: Padding(
@@ -563,11 +514,5 @@ class _FormPengajuanPinjamanPageState extends State<FormPengajuanPinjamanPage> {
     _jumlahPinjamanController.dispose();
     _tenorController.dispose();
     super.dispose();
-  }
-
-  Future<List<Map<String, dynamic>>> _loadPinjamanLain() async {
-    if (widget.user == null) return [];
-    final allPinjaman = await RiwayatPinjamanService.getAllRiwayat();
-    return allPinjaman.where((p) => p['user_id'] != widget.user!['id'] && p['status'] == 'aktif').toList();
   }
 }
